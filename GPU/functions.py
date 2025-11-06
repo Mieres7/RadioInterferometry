@@ -430,12 +430,92 @@ def grid_visibilities(V, uvw_lambda, du, dv, Npix=256):
 
     return VG, WG, np.sum(VG, axis=2)
 
+def grid_visibilities_v2(V, uvw_lambda, du, dv, Npix=256):
+    """
+    Grids complex visibilities onto a single (u, v) grid 
+    combining all frequency channels.
+    """
+    n_freqs = V.shape[-1]
+    u_coords = uvw_lambda[..., 0]
+    v_coords = uvw_lambda[..., 1]
+
+    VG = np.zeros((Npix, Npix), dtype=np.complex128)
+    WG = np.zeros((Npix, Npix), dtype=np.float64)
+
+    for f in range(n_freqs):
+        u_f = u_coords[..., f].ravel()
+        v_f = v_coords[..., f].ravel()
+        V_f = V[..., f].ravel()
+        omega_f = np.ones_like(V_f)  # Pesos = 1
+
+        i = np.rint(u_f / du).astype(int) + Npix // 2
+        j = np.rint(v_f / dv).astype(int) + Npix // 2
+
+        mask = (i >= 0) & (i < Npix) & (j >= 0) & (j < Npix)
+
+        np.add.at(VG, (j[mask], i[mask]), omega_f[mask] * V_f[mask])
+        np.add.at(WG, (j[mask], i[mask]), omega_f[mask])
+
+    valid_cells = WG > 0
+    VG[valid_cells] /= WG[valid_cells]
+
+    return VG, WG
+
+
+def grid_visibilities_cpu(V, uvw_lambda, du, dv, Npix=256):
+    """
+    Versión sin broadcasting ni operaciones vectorizadas.
+    Grilla visibilidades complejas V sobre una grilla (u,v)
+    combinando todos los canales de frecuencia.
+
+    Parámetros
+    ----------
+    V : ndarray de complejos, shape (n_baselines, n_times, n_freqs)
+        Visibilidades.
+    uvw_lambda : ndarray, shape (n_baselines, n_times, n_freqs, 3)
+        Coordenadas (u, v, w) en longitudes de onda.
+    du, dv : float
+        Resolución en el plano uv.
+    Npix : int
+        Tamaño de la grilla resultante.
+    """
+
+    n_baselines, n_times, n_freqs = V.shape
+    VG = np.zeros((Npix, Npix), dtype=np.complex128)
+    WG = np.zeros((Npix, Npix), dtype=np.float64)
+
+    # Recorremos todas las dimensiones explícitamente
+    for b in range(n_baselines):
+        for t in range(n_times):
+            for f in range(n_freqs):
+                u = uvw_lambda[b, t, f, 0]
+                v = uvw_lambda[b, t, f, 1]
+                val = V[b, t, f]
+
+                # Convertir coordenadas uv a índices de la grilla
+                i = int(round(u / du)) + Npix // 2
+                j = int(round(v / dv)) + Npix // 2
+
+                # Verificar si cae dentro de la grilla
+                if 0 <= i < Npix and 0 <= j < Npix:
+                    VG[j, i] += val
+                    WG[j, i] += 1.0
+
+    # Normalización por peso
+    for j in range(Npix):
+        for i in range(Npix):
+            if WG[j, i] > 0:
+                VG[j, i] /= WG[j, i]
+
+    return VG, WG
+
+
+
 
 def to_fourier(visibilities, use_gpu=False):
     if use_gpu:
         return cp.fft.fftshift(cp.fft.ifft2(cp.fft.ifftshift(cp.asarray(visibilities))))
     return fftshift(ifft2(ifftshift(visibilities)))
-
 
 # utilidades 
 
@@ -631,14 +711,6 @@ def calculate_and_plot_psf(WG, cell_size_arcsec):
     plt.show()
 
 
-
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-import math
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 def plot_dirty_images(VG, cell_size_arcsec, mode='all'):
     """
     Calcula y grafica las "dirty images" a partir del cubo de visibilidades VG.
@@ -712,6 +784,44 @@ def plot_dirty_images(VG, cell_size_arcsec, mode='all'):
 
     else:
         raise ValueError("El parámetro 'mode' debe ser 'all' o 'single'.")
+
+def plot_dirty_image(VG, cell_size_arcsec):
+    """
+    Calcula y grafica la Dirty Image (imagen sucia) a partir de una grilla de visibilidades.
+
+    Parameters
+    ----------
+    VG : np.ndarray (N, N)
+        Grilla compleja de visibilidades combinadas.
+    cell_size_arcsec : float
+        Tamaño de celda en arcosegundos.
+    """
+    N = VG.shape[0]
+
+    # Transformada inversa de Fourier → imagen sucia
+    dirty_image = to_fourier(VG)
+    intensity = np.abs(dirty_image)
+    intensity /= np.max(intensity)  # normalización al máximo = 1
+
+    # Campo de visión total (en arcsec)
+    image_fov_arcsec = N * cell_size_arcsec
+    extent = [-image_fov_arcsec / 2, image_fov_arcsec / 2,
+              -image_fov_arcsec / 2, image_fov_arcsec / 2]
+
+    # --- Gráfico ---
+    fig, ax = plt.subplots(figsize=(6, 6))
+    im = ax.imshow(intensity, origin='lower', cmap='inferno', extent=extent)
+    ax.set_title("Dirty Image (Imagen Sucia)")
+    ax.set_xlabel("Offset RA (arcsec)")
+    ax.set_ylabel("Offset Dec (arcsec)")
+
+    # Barra de color lateral
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.1)
+    fig.colorbar(im, cax=cax, label="Intensidad Normalizada")
+
+    plt.tight_layout()
+    plt.show()
 
 
 
