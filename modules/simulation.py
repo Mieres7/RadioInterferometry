@@ -69,4 +69,4 @@ def visibilities_simulation(config):
 
     V, omega, l_src, m_src, n_src = visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg)
 
-    return V
+    return V, uvw_lambda, frequencies, baselines_enu

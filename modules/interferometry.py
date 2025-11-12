@@ -3,7 +3,11 @@ Cálculos de visibilidades, frecuencias y grillas
 """
 
 import numpy as np
+import math
+import cupy as cp
 from numpy.fft import fftshift, ifftshift, ifft2
+from numba import cuda
+
 
 def uvw_to_lambda(uvw, freq_hz):
     c = 299792458.0
@@ -58,33 +62,53 @@ def generate_random_sources(ra0_deg, dec0_deg, N=50, max_offset_deg=1.0, flux_ra
     return [{"ra_deg": ra, "dec_deg": dec, "S0": S} for ra, dec, S in zip(ras, decs, fluxes)]
 
 
-def grid_visibilities(V, uvw_lambda, du, dv, Npix=256, join=True):
+def grid_visibilities(V, uvw_lambda, du, dv, Npix=256, use_gpu=True):
     """
-    Grid Visibilities. If join returns a single grid
+    Grids complex visibilities onto a single (u, v) grid
     """
-    n_freqs = V.shape[-1]
-    u_coords, v_coords = uvw_lambda[..., 0], uvw_lambda[..., 1]
 
-    VG = np.zeros((Npix, Npix, n_freqs), dtype=np.complex128)
-    WG = np.zeros((Npix, Npix, n_freqs), dtype=np.float64)
+    if use_gpu:
+        sys = cp
+        print("gridding in gpu")        
+    else:
+        sys = np
+        print("gridding in cpu")
+
+    n_freqs = V.shape[-1]
+    u_coords = uvw_lambda[..., 0]
+    v_coords = uvw_lambda[..., 1]
+
+    VG = sys.zeros((Npix, Npix), dtype=sys.complex128)
+    WG = sys.zeros((Npix, Npix), dtype=sys.float64)
 
     for f in range(n_freqs):
-        u_f, v_f, V_f = u_coords[..., f].ravel(), v_coords[..., f].ravel(), V[..., f].ravel()
-        omega_f = np.ones_like(V_f)
+        u_f = u_coords[..., f].ravel()
+        v_f = v_coords[..., f].ravel()
+        V_f = V[..., f].ravel()
+        omega_f = sys.ones_like(V_f, dtype=sys.float64)  # Pesos = 1
 
-        i = np.rint(u_f / du).astype(int) + Npix // 2
-        j = np.rint(v_f / dv).astype(int) + Npix // 2
+        i = sys.rint(u_f / du).astype(int) + Npix // 2
+        j = sys.rint(v_f / dv).astype(int) + Npix // 2
+
         mask = (i >= 0) & (i < Npix) & (j >= 0) & (j < Npix)
-        
-        if join:
-            np.add.at(VG, (j[mask], i[mask]), omega_f[mask] * V_f[mask])
-            np.add.at(WG, (j[mask], i[mask]), omega_f[mask])
-        else:
-            np.add.at(VG[..., f], (j[mask], i[mask]), omega_f[mask] * V_f[mask])
-            np.add.at(WG[..., f], (j[mask], i[mask]), omega_f[mask])
 
-    valid = WG > 0
-    VG[valid] /= WG[valid]
+        ii, jj = i[mask], j[mask]
+        V_f_mask = V_f[mask]
+        omega_f_mask = omega_f[mask]
+        
+        values_to_add = omega_f_mask * V_f_mask
+
+        if use_gpu:
+            cp.add.at(VG.real, (jj, ii), values_to_add.real)
+            cp.add.at(VG.imag, (jj, ii), values_to_add.imag)
+            cp.add.at(WG, (jj, ii), omega_f_mask)
+        else:
+            sys.add.at(VG, (jj, ii), values_to_add)
+            sys.add.at(WG, (jj, ii), omega_f_mask)
+
+    valid_cells = WG > 0
+    VG[valid_cells] /= WG[valid_cells]
+
     return VG, WG
 
 
