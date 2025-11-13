@@ -45,7 +45,7 @@ def visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg, sigma_pb=0
     l_src, m_src, n_src = direction_cosines(ras_rad, decs_rad, ra0, dec0)
     A_src = np.exp(-(l_src**2 + m_src**2) / (2 * sigma_pb**2))
 
-    V_total = np.zeros(u.shape, dtype=complex)
+    V_total = np.zeros(u.shape, dtype=np.complex64)
     for ls, ms, ns, As, Ss in zip(l_src, m_src, n_src, A_src, S0s):
         phase = 2j * np.pi * (u * ls + v * ms + w * (ns - 1.0))
         V_total += As * Ss / ns * np.exp(phase)
@@ -66,6 +66,7 @@ def grid_visibilities(V, uvw_lambda, du, dv, Npix=256, use_gpu=True):
     """
     Grids complex visibilities onto a single (u, v) grid
     """
+
     if use_gpu:
         sys = cp
         V_in = sys.asarray(V)
@@ -80,14 +81,14 @@ def grid_visibilities(V, uvw_lambda, du, dv, Npix=256, use_gpu=True):
     u_coords = uvw_in[..., 0]
     v_coords = uvw_in[..., 1]
 
-    VG = sys.zeros((Npix, Npix), dtype=sys.complex128)
-    WG = sys.zeros((Npix, Npix), dtype=sys.float64)
+    VG = sys.zeros((Npix, Npix), dtype=sys.complex64)
+    WG = sys.zeros((Npix, Npix), dtype=sys.float32)
     
     u_all = u_coords.ravel()
     v_all = v_coords.ravel()
     V_all = V_in.ravel() 
 
-    omega_all = sys.ones_like(V_all, dtype=sys.float64)  # Pesos = 1
+    omega_all = sys.ones_like(V_all, dtype=sys.float32)  # Pesos = 1
 
     i = sys.rint(u_all / du).astype(int) + Npix // 2
     j = sys.rint(v_all / dv).astype(int) + Npix // 2
@@ -112,9 +113,6 @@ def grid_visibilities(V, uvw_lambda, du, dv, Npix=256, use_gpu=True):
     VG[valid_cells] /= WG[valid_cells]
 
     return VG, WG
-
-
-
 
 def to_fourier(visibilities):
     return fftshift(ifft2(ifftshift(visibilities)))

@@ -17,3 +17,5 @@ Thumbs.db
 # Archivos generados
 *.log
 *.tmp
+
+.venv/
