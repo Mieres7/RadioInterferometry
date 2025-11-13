@@ -66,50 +66,54 @@ def grid_visibilities(V, uvw_lambda, du, dv, Npix=256, use_gpu=True):
     """
     Grids complex visibilities onto a single (u, v) grid
     """
-
     if use_gpu:
         sys = cp
-        print("gridding in gpu")        
+        V_in = sys.asarray(V)
+        uvw_in = sys.asarray(uvw_lambda)
+        print("Gridding in GPU (CuPy Vectorized)")
     else:
         sys = np
-        print("gridding in cpu")
+        V_in = V
+        uvw_in = uvw_lambda
+        print("Gridding in CPU (NumPy Vectorized)")
 
-    n_freqs = V.shape[-1]
-    u_coords = uvw_lambda[..., 0]
-    v_coords = uvw_lambda[..., 1]
+    u_coords = uvw_in[..., 0]
+    v_coords = uvw_in[..., 1]
 
     VG = sys.zeros((Npix, Npix), dtype=sys.complex128)
     WG = sys.zeros((Npix, Npix), dtype=sys.float64)
+    
+    u_all = u_coords.ravel()
+    v_all = v_coords.ravel()
+    V_all = V_in.ravel() 
 
-    for f in range(n_freqs):
-        u_f = u_coords[..., f].ravel()
-        v_f = v_coords[..., f].ravel()
-        V_f = V[..., f].ravel()
-        omega_f = sys.ones_like(V_f, dtype=sys.float64)  # Pesos = 1
+    omega_all = sys.ones_like(V_all, dtype=sys.float64)  # Pesos = 1
 
-        i = sys.rint(u_f / du).astype(int) + Npix // 2
-        j = sys.rint(v_f / dv).astype(int) + Npix // 2
+    i = sys.rint(u_all / du).astype(int) + Npix // 2
+    j = sys.rint(v_all / dv).astype(int) + Npix // 2
 
-        mask = (i >= 0) & (i < Npix) & (j >= 0) & (j < Npix)
+    mask = (i >= 0) & (i < Npix) & (j >= 0) & (j < Npix)
 
-        ii, jj = i[mask], j[mask]
-        V_f_mask = V_f[mask]
-        omega_f_mask = omega_f[mask]
+    ii, jj = i[mask], j[mask]
+    V_mask = V_all[mask]
+    omega_mask = omega_all[mask]
+    
+    values_to_add = omega_mask * V_mask
+
+    if use_gpu:
+        cp.add.at(VG.real, (jj, ii), values_to_add.real)
+        cp.add.at(VG.imag, (jj, ii), values_to_add.imag)
+        cp.add.at(WG, (jj, ii), omega_mask)
+    else:
+        sys.add.at(VG, (jj, ii), values_to_add)
+        sys.add.at(WG, (jj, ii), omega_mask)
         
-        values_to_add = omega_f_mask * V_f_mask
-
-        if use_gpu:
-            cp.add.at(VG.real, (jj, ii), values_to_add.real)
-            cp.add.at(VG.imag, (jj, ii), values_to_add.imag)
-            cp.add.at(WG, (jj, ii), omega_f_mask)
-        else:
-            sys.add.at(VG, (jj, ii), values_to_add)
-            sys.add.at(WG, (jj, ii), omega_f_mask)
-
     valid_cells = WG > 0
     VG[valid_cells] /= WG[valid_cells]
 
     return VG, WG
+
+
 
 
 def to_fourier(visibilities):
