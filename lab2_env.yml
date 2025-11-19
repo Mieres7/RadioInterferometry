@@ -1,0 +1,30 @@
+name: lab2_env
+channels:
+  - conda-forge
+  - nvidia
+
+dependencies:
+  # Python solicitado
+  - python=3.13.7
+
+  # Paquetes científicos
+  - numpy
+  - scipy
+
+  # Versiones específicas solicitadas
+  - numba=0.62.1
+  - cupy=13.6.0
+
+  # CUDA Toolkit exacto solicitado
+  # (release 12.9, V12.9.41)
+  - cuda-toolkit=12.9.0
+  # - cuda-nvcc=12.9.0
+
+  # Para Jupyter
+  - jupyterlab
+  - ipykernel
+
+  # pip packages
+  - pip
+  - pip:
+      - juliandate==1.0.5

@@ -1,0 +1,767 @@
+19:33:02.417 [debug] Handle Execution of Cells 1,2,3,4,5,6,7,8,9,10,11,12,13,14 for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:02.417 [trace] Execute Notebook ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb. Step 1
+19:33:02.417 [trace] Connect to Kernel ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb. Step 2
+19:33:02.417 [trace] Connected to Kernel ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb. Step 3
+19:33:02.417 [trace] executeCell 1. Step 4
+19:33:02.417 [trace] executeCell 2. Step 4
+19:33:02.417 [trace] executeCell 3. Step 4
+19:33:02.417 [trace] executeCell 4. Step 4
+19:33:02.417 [trace] executeCell 5. Step 4
+19:33:02.417 [trace] executeCell 6. Step 4
+19:33:02.417 [trace] executeCell 7. Step 4
+19:33:02.417 [trace] executeCell 8. Step 4
+19:33:02.417 [trace] executeCell 9. Step 4
+19:33:02.417 [trace] executeCell 10. Step 4
+19:33:02.417 [trace] executeCell 11. Step 4
+19:33:02.417 [trace] executeCell 12. Step 4
+19:33:02.417 [trace] executeCell 13. Step 4
+19:33:02.417 [trace] executeCell 14. Step 4
+19:33:02.418 [trace] Cell Index:1 sent to kernel
+19:33:02.421 [trace] Start cell 1 execution @ 1763591582421 (clear output)
+19:33:02.421 [debug] Kernel acknowledged execution of cell 1 @ 1763591582421
+19:33:02.434 [trace] Cell 1 completed in 0.013s (start: 1763591582421, end: 1763591582434)
+19:33:02.434 [trace] Cell 1 executed successfully
+19:33:02.435 [trace] Cell Index:2 sent to kernel
+19:33:02.437 [trace] Start cell 2 execution @ 1763591582436 (clear output)
+19:33:02.437 [debug] Kernel acknowledged execution of cell 2 @ 1763591582436
+19:33:02.715 [trace] Cell 2 completed in 0.278s (start: 1763591582436, end: 1763591582714)
+19:33:02.715 [trace] Cell 2 executed successfully
+19:33:02.715 [trace] Cell Index:3 sent to kernel
+19:33:02.717 [trace] Start cell 3 execution @ 1763591582717 (clear output)
+19:33:02.717 [debug] Kernel acknowledged execution of cell 3 @ 1763591582717
+19:33:03.335 [trace] Cell 3 completed in 0.618s (start: 1763591582717, end: 1763591583335)
+19:33:03.335 [trace] Cell 3 executed successfully
+19:33:03.335 [trace] Cell Index:4 sent to kernel
+19:33:03.337 [trace] Start cell 4 execution @ 1763591583337 (clear output)
+19:33:03.337 [debug] Kernel acknowledged execution of cell 4 @ 1763591583337
+19:33:03.344 [trace] Cell 4 completed in 0.007s (start: 1763591583337, end: 1763591583344)
+19:33:03.344 [trace] Cell 4 executed successfully
+19:33:03.345 [trace] Cell Index:5 sent to kernel
+19:33:03.346 [trace] Start cell 5 execution @ 1763591583346 (clear output)
+19:33:03.346 [debug] Kernel acknowledged execution of cell 5 @ 1763591583346
+19:33:03.361 [trace] Cell 5 completed in 0.015s (start: 1763591583346, end: 1763591583361)
+19:33:03.361 [trace] Cell 5 executed successfully
+19:33:03.362 [trace] Cell Index:6 sent to kernel
+19:33:03.364 [trace] Start cell 6 execution @ 1763591583364 (clear output)
+19:33:03.364 [debug] Kernel acknowledged execution of cell 6 @ 1763591583364
+19:33:03.389 [trace] Cell 6 completed in 0.025s (start: 1763591583364, end: 1763591583389)
+19:33:03.390 [trace] Cell 6 executed successfully
+19:33:03.390 [trace] Cell Index:7 sent to kernel
+19:33:03.392 [trace] Start cell 7 execution @ 1763591583391 (clear output)
+19:33:03.392 [debug] Kernel acknowledged execution of cell 7 @ 1763591583391
+19:33:03.582 [trace] Cell 7 completed in 0.19s (start: 1763591583391, end: 1763591583581)
+19:33:03.582 [trace] Cell 7 executed successfully
+19:33:03.582 [trace] Cell Index:8 sent to kernel
+19:33:03.589 [trace] Start cell 8 execution @ 1763591583589 (clear output)
+19:33:03.589 [debug] Kernel acknowledged execution of cell 8 @ 1763591583589
+19:33:03.598 [trace] Cell 8 completed in 0.009s (start: 1763591583589, end: 1763591583598)
+19:33:03.598 [trace] Cell 8 executed successfully
+19:33:03.598 [trace] Cell Index:9 sent to kernel
+19:33:03.600 [trace] Start cell 9 execution @ 1763591583600 (clear output)
+19:33:03.600 [debug] Kernel acknowledged execution of cell 9 @ 1763591583600
+19:33:03.646 [trace] Cell 9 completed in 0.046s (start: 1763591583600, end: 1763591583646)
+19:33:03.646 [trace] Cell 9 executed successfully
+19:33:03.647 [trace] Cell Index:10 sent to kernel
+19:33:03.648 [trace] Start cell 10 execution @ 1763591583648 (clear output)
+19:33:03.648 [debug] Kernel acknowledged execution of cell 10 @ 1763591583648
+19:33:03.655 [trace] Cell 10 completed in 0.007s (start: 1763591583648, end: 1763591583655)
+19:33:03.655 [trace] Cell 10 executed successfully
+19:33:03.656 [trace] Cell Index:11 sent to kernel
+19:33:03.657 [trace] Start cell 11 execution @ 1763591583657 (clear output)
+19:33:03.657 [debug] Kernel acknowledged execution of cell 11 @ 1763591583657
+19:33:03.671 [trace] Cell 11 completed in 0.014s (start: 1763591583657, end: 1763591583671)
+19:33:03.671 [trace] Cell 11 executed successfully
+19:33:03.672 [trace] Cell Index:12 sent to kernel
+19:33:03.675 [trace] Start cell 12 execution @ 1763591583675 (clear output)
+19:33:03.675 [debug] Kernel acknowledged execution of cell 12 @ 1763591583675
+19:33:03.682 [trace] Cell 12 completed in 0.007s (start: 1763591583675, end: 1763591583682)
+19:33:03.683 [trace] Cell 12 executed successfully
+19:33:03.683 [trace] Cell Index:13 sent to kernel
+19:33:03.685 [trace] Start cell 13 execution @ 1763591583685 (clear output)
+19:33:03.685 [debug] Kernel acknowledged execution of cell 13 @ 1763591583685
+19:33:03.848 [debug] KernelProcess Exited 231743, Exit Code - null 
+19:33:03.848 [error] Disposing session as kernel process died ExitCode: undefined, Reason: 
+19:33:03.848 [debug] Dispose Kernel process 231743.
+19:33:03.856 [debug] Disposed Kernel process 231743.
+19:33:03.856 [trace] Start cell 12 execution @ 1763591583675
+19:33:03.880 [trace] Cell 12 completed in -1763591583.675s (start: 1763591583675, end: undefined)
+19:33:09.724 [debug] VS Code interrupted kernel for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:09.724 [debug] Command interrupted kernel for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:09.724 [debug] interrupt the kernel, options.disableUI=false for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:12.524 [error] Error in execution (get message for cell) Ra [Error]: The kernel 'lab2_env (Python 3.11.14)' died. Click [here](https://aka.ms/vscodeJupyterKernelCrash) for more info. View Jupyter [log](command:jupyter.viewOutput) for further details.
+    at n.verifyKernelState (~/.vscode/extensions/ms-toolsai.jupyter-2025.9.1-linux-x64/dist/extension.node.js:309:81661)
+    at ~/.vscode/extensions/ms-toolsai.jupyter-2025.9.1-linux-x64/dist/extension.node.js:329:8808 {
+  category: 'unknown',
+  isJupyterError: true,
+  originalException: undefined,
+  kernelConnectionMetadata: n {
+    kind: 'startUsingPythonInterpreter',
+    kernelSpec: Dd {
+      specFile: '~/.config/Code/User/globalStorage/ms-toolsai.jupyter/version-2025.9.1/jupyter/kernels/python3137jvsc74a57bd08ce3b6602a2ec3f0522065fdedf82c64ec4392db5ffdf68294e79fbe661f0b50/kernel.json',
+      interpreterPath: '~/y/envs/lab2_env/bin/python',
+      isRegisteredByVSC: 'registeredByNewVersionOfExt',
+      name: 'python3137jvsc74a57bd08ce3b6602a2ec3f0522065fdedf82c64ec4392db5ffdf68294e79fbe661f0b50',
+      argv: [Array],
+      language: 'python',
+      executable: 'python',
+      display_name: 'lab2_env',
+      metadata: [Object],
+      env: {},
+      interrupt_mode: undefined
+    },
+    interpreter: { id: '~/y/envs/lab2_env/bin/python', uri: [ec] },
+    id: '.jvsc74a57bd08ce3b6602a2ec3f0522065fdedf82c64ec4392db5ffdf68294e79fbe661f0b50.~/y/envs/lab2_env/python.~/y/envs/lab2_env/python.-m#ipykernel_launcher'
+  }
+}
+19:33:22.463 [debug] VS Code interrupted kernel for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:22.463 [debug] Command interrupted kernel for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:22.463 [debug] interrupt the kernel, options.disableUI=false for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:23.482 [info] Restart requested ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:23.482 [debug] Cancel pending cells
+19:33:23.483 [trace] Cell 13 completed in -1763591583.685s (start: 1763591583685, end: undefined)
+19:33:23.483 [trace] Cell 14 completed in 0s (start: undefined, end: undefined)
+19:33:23.483 [trace] Cell 13 executed successfully
+19:33:23.483 [trace] Cell 14 executed successfully
+19:33:23.483 [warn] Cancel all remaining cells due to dead kernel
+19:33:23.483 [debug] Cancel pending cells
+19:33:23.487 [debug] Get Custom Env Variables, Class name = Gm, completed in 0ms, has a truthy return value, Arg 1: "~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb", Arg 2: "RunPythonCode"
+19:33:23.487 [debug] Launching kernel .jvsc74a57bd08ce3b6602a2ec3f0522065fdedf82c64ec4392db5ffdf68294e79fbe661f0b50.~/y/envs/lab2_env/python.~/y/envs/lab2_env/python.-m#ipykernel_launcher for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb in ~/Repositories/RadioInterferometry/lab2 with ports 9001, 9000, 9004, 9002, 9003
+19:33:23.514 [error] Failed to get activated conda env vars for ~/y/envs/lab2_env/bin/python
+                 in 27ms
+19:33:23.515 [error] Unable to determine site packages path for python ~/y/envs/lab2_env/bin/python (Conda)
+19:33:23.515 [trace] Prepend PATH with python bin for ~/y/envs/lab2_env/bin/python
+19:33:23.515 [debug] Getting activated env variables, Class name = Wd, completed in 28ms, has a truthy return value, Arg 1: "~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb", Arg 2: "~/y/envs/lab2_env/bin/python", Arg 3: undefined
+19:33:23.523 [info] Process Execution: ~/y/envs/lab2_env/bin/python -c "import ipykernel; print(ipykernel.__version__); print("5dc3a68c-e34e-4080-9c3e-2a532b2ccb4d"); print(ipykernel.__file__)"
+19:33:23.530 [info] Process Execution: ~/y/envs/lab2_env/bin/python -m ipykernel_launcher --f=/run/user/1000/jupyter/runtime/kernel-v3e01d0592cb02a627257cd20c9347b9b2edbd7e5d.json
+    > cwd: ~/Repositories/RadioInterferometry/lab2
+19:33:23.531 [debug] Kernel process 236818.
+19:33:23.610 [trace] ipykernel version & path 7.1.0, ~/y/envs/lab2_env/lib/python3.13/site-packages/ipykernel/__init__.py for ~/y/envs/lab2_env/bin/python
+19:33:23.706 [debug] Kernel output 236818: To connect another client to this kernel, use:
+--existing /run/user/1000/jupyter/runtime/kernel-v3e01d0592cb02a627257cd20c9347b9b2edbd7e5d.json
+19:33:23.735 [debug] Waiting for Raw Session to be ready in postStartRawSession
+19:33:23.735 [debug] Waiting for Raw session to be ready, status: connected
+19:33:23.735 [trace] Raw session connected
+19:33:23.735 [debug] Waited for Raw session to be ready & got status: connected
+19:33:23.735 [debug] Successfully waited for Raw Session to be ready in postStartRawSession
+19:33:23.735 [debug] Kernel status is 'unknown' before requesting kernel info and after ready
+19:33:23.735 [debug] Sending request for kernelInfo
+19:33:23.755 [trace] Got response for requestKernelInfo
+19:33:23.755 [debug] Successfully completed postStartRawSession after 1 attempt(s) in 20ms
+19:33:23.756 [info] Restarted bbc438eb-ea63-44ae-9bcb-6f5f71b899af
+19:33:23.756 [trace] Executing silently Code (idle) = import sys as _VSCODE_sys\nprint(_VSCODE_sys.executable); del _VSCODE_sys
+19:33:23.759 [trace] Executing silently Code (completed) = import sys as _VSCODE_sys\nprint(_VSCODE_sys.executable); del _VSCODE_sys with 1 output(s)
+19:33:23.759 [trace] Started running kernel initialization for ~/Repositories/RadioInterferometry/lab2/laboratory2.ipynb
+19:33:23.759 [trace] Executing silently Code (idle) = try:\nimport ipywidgets as _VSCODE_ipywidgets\nprint("e976ee50-99ed-4aba-9b6b-9dcd5634d07d:IPy
+19:33:23.761 [trace] Executing silently Code (completed) = try:\nimport ipywidgets as _VSCODE_ipywidgets\nprint("e976ee50-99ed-4aba-9b6b-9dcd5634d07d:IPy with 0 output(s)
+19:33:23.761 [trace] Determined IPyWidgets Version as undefined
+19:33:23.762 [trace] Executing silently Code (idle) = def __VSCODE_inject_module():\ndef __VSCODE_call_function(function, callback, data=None):
+19:33:23.766 [trace] Executing silently Code (completed) = def __VSCODE_inject_module():\ndef __VSCODE_call_function(function, callback, data=None): with 0 output(s)
+19:33:23.767 [debug] Requesting Kernel info
+19:33:23.767 [trace] Got Kernel info
+19:33:23.767 [trace] End running kernel initialization, now waiting for idle
+19:33:23.767 [trace] Waiting for idle on (kernel): bbc438eb-ea63-44ae-9bcb-6f5f71b899af -> idle
+19:33:23.767 [trace] Finished waiting for idle on (kernel): bbc438eb-ea63-44ae-9bcb-6f5f71b899af -> idle
+19:33:23.767 [trace] End running kernel initialization, session is idle
+19:33:23.767 [trace] Registering commtarget jupyter.widget
+19:33:23.768 [trace] Queue code ms-toolsai.datawrangler-7 from ms-toolsai.datawrangler after 0ms:
+import builtins as __DW_BUILTINS_FOR_SCOPE__
+__DW_SCOPE__ = __DW_BUILTINS_FOR_SCOPE__.globals().get("__DW_SCOPE__", {})
+__DW_BUILTINS_FOR_SCOPE__.globals()["__DW_SCOPE__"] = __DW_SCOPE__
+del __DW_BUILTINS_FOR_SCOPE__
+def __DW_GET_SESSION_ID__():
+    import uuid
+    from builtins import str
+    session_id = str(uuid.uuid4())
+    return session_id
+
+"""
+Note: all executions are function-scoped as we do not assume the code below executes in an isolated kernel environment.
+"""
+
+def __DW_IO__(session_id, async_type=None):
+    from builtins import dict, Exception, isinstance, object, str
+
+    DW_OUTPUT_MIME_TYPE = "application/vnd.microsoft.datawrangler.output+json"
+
+    def comm():
+        from comm import create_comm
+        comm = create_comm("datawrangler")
+        return lambda msg: comm.send(msg, {"async": True})
+    
+    def display():
+        from IPython.display import DisplayHandle
+        handle = DisplayHandle()
+        handle.display({ DW_OUTPUT_MIME_TYPE: {} }, raw=True)
+        return lambda msg: handle.update({ DW_OUTPUT_MIME_TYPE: msg }, raw=True, metadata={"async": True})
+
+    types = {
+        "comm": comm,
+        "display": display,
+    }
+
+    send_async_output = None
+    if async_type in types:
+        try:
+            send_async_output = types[async_type]()
+        except Exception:
+            pass
+    
+    def output_mime(data):
+        import sys
+        class MimeBundle(object):
+            def __init__(self, data):
+                self.data = data
+            def _repr_mimebundle_(self, **kwargs):
+                return { "text/plain": "", **self.data }
+            # 'text/plain' may be added to the bundle automatically. Make sure it does not take up space.
+            def __str__(self):
+                return ""
+            def __repr__(self):
+                return ""
+        sys.displayhook(MimeBundle(data))
+    
+    def output(data):
+        # vscode-jupyter has a problem handling non-object JSON at the top level. So make sure we never send it.
+        if not isinstance(data, dict):
+            raise Exception("Output data must be a dictionary")
+        output_mime({ DW_OUTPUT_MIME_TYPE: data })
+
+    def output_async(**data):
+        msg = {"_session": session_id, **data}
+        if send_async_output:
+            send_async_output(msg)
+        
+    def log_exception(error_details=None, props={}, measures={}):
+        if error_details is not None:
+            errorName = error_details["name"]
+            error = error_details["message"]
+        else:
+            import sys
+            (errorName, error) = sys.exc_info()[:2]
+        output_async(type="error", name=str(errorName), message=str(error), properties=props, measures=measures)
+    
+    def log_telemetry(name, props={}, measures={}):
+        output_async(type="telemetry", event=name, properties=props, measurements=measures)
+
+    return dict(
+        output=output,
+        output_async=output_async,
+        log_exception=log_exception,
+        log_telemetry=log_telemetry,
+    )
+
+def __DW_PANDAS_TRANSPORT__():
+    from builtins import any, AttributeError, bool, dict, Exception, hasattr, ImportError, isinstance, len, list, map, min, object, range, str, tuple, type
+
+    def get_df_shape(df):
+        shape = {}
+        shape["rows"], shape["columns"] = df.shape
+        return shape
+
+    def get_index_column_name(df):
+        try:
+            index_column_name = df.index.name if df.index.name else str(tuple(df.index.names)) if len(df.index.names) > 1 else "index"
+        except AttributeError:
+            index_column_name = "index"
+        return index_column_name
+
+    def get_inferred_dtype(column):
+        import pandas as pd
+        # In some older versions of Pandas, infer_dtype does not support sparse columns
+        if hasattr(column, "sparse"):
+            column = column.sparse.to_dense()
+        inferred_dtype = pd.api.types.infer_dtype(column, skipna=True)
+        return inferred_dtype
+
+    def map_dtype_to_dw_type(dtype, inferred_dtype=None):
+        """
+        References to known types:
+        - Pandas: https://stackoverflow.com/a/29246498
+        - NumPy: https://numpy.org/doc/stable/reference/arrays.scalars.html
+
+        Note: the types here do not necessarily include all NumPy types, but rather
+        what type Pandas uses when the type is used as input. For example, NumPy
+        supports several precision for datetimes, while Pandas internally only uses
+        nanoseconds, see https://github.com/pandas-dev/pandas/issues/6741#issuecomment-39026803
+
+        Note that the value mapped here is used for the following purposes:
+        - To figure out what "picker" should be used for this type in the UI, e.g. when replacing
+        - To figure out what operations should be associated with this type in the UI
+        """
+        import re
+
+        # string types
+        if dtype == "string" or (dtype == "object" and inferred_dtype == "string"):
+            return "string"
+
+        # category types
+        # TODO@DW: enable this
+        # if dtype == "category":
+        #     return "category"
+
+        # float types
+        # TODO@DW: consider if we need to distinguish nullable types
+        # or pass it along as metadata for certain operations
+        if re.fullmatch(r"(?:float|Float)\d+", dtype):
+            return "float"
+
+        # int types
+        # TODO@DW: consider if we need to distinguish nullable types
+        # or pass it along as metadata for certain operations
+        if re.fullmatch(r"(?:int|uint|Int|UInt)\d+", dtype):
+            return "integer"
+
+        # complex types
+        # TODO@DW: enable this
+        # if re.fullmatch("complex\d+", dtype):
+        #     return "complex"
+
+        # boolean types
+        # TODO@DW: consider if we need to distinguish nullable types
+        # or pass it along as metadata for certain operations
+        if dtype in ["bool", "boolean"]:
+            return "boolean"
+
+        # datetime types
+        # TODO@DW: handle timezone-specific datetimes
+        if dtype == "datetime64[ns]":
+            return "datetime"
+
+        # timedelta types
+        # TODO@DW: enable this
+        # if dtype == "timedelta64[ns]":
+        #     return "timedelta"
+
+        # period types
+        # TODO@DW: enable this
+        # if re.fullmatch(r"period[.*]", dtype):
+        #    return "period"
+
+        # interval types
+        # TODO@DW: we will need to pass the metadata of the interval type as well
+        # interval_match = re.fullmatch(r"interval[(.*), .*]", dtype)
+        # if interval_match:
+        #    return map_dtype_to_dw_type(interval_match.group(1))
+
+        # sparse types
+
+        # TODO@DW: sparse types don't well for us because they don't support assignments,
+        # e.g. https://github.com/pandas-dev/pandas/issues/21818 or describe calls.
+        # For now we can just render them, but not support operations on them yet.
+
+        # for sparse types, they're essentially just more compact versions of the
+        # type that they wrap around, so we can just extract that part instead
+        # sparse_match = re.fullmatch(r"(?:Sparse\[(.*), .*\]|Sparse\[(.*)\])", dtype)
+        # if sparse_match:
+        #     return map_dtype_to_dw_type(sparse_match.group(1))
+
+        # default to unknown
+        return "unknown"
+
+    def is_missing(value):
+        import pandas as pd
+
+        return pd.api.types.is_scalar(value) and bool(pd.isna(value))
+
+    def serialize(x):
+        if is_missing(x):
+            return None
+        return str(x)
+
+    def serialize_row(df, idx):
+        key = df.index[idx]
+        data = [serialize(key), *(serialize(df.iat[idx, col]) for col in range(len(df.columns)))]
+        return data
+
+    def pd_dumps(data):
+        try:
+            # This was renamed in Pandas 2.2.0. We need to try both.
+            from pandas.io.json import ujson_dumps as pd_dumps
+        except ImportError:
+            from pandas.io.json import dumps as pd_dumps
+
+        return pd_dumps(data, iso_dates=True, default_handler=str)
+    
+    def get_df_payload_v0(df, row_limit, **extra_props):
+        import pandas as pd
+        data = []
+        for i in range(0, min(len(df), row_limit)):
+            data.append(serialize_row(df, i))
+        column_types = [df.index.dtype] + list(df.dtypes)
+        column_names = [get_index_column_name(df)] + list(df)
+        columns = [df.index] + [df.iloc[:, column_idx] for column_idx in range(len(list(df)))]
+        column_info_list = []
+        for column_idx in range(0, len(column_names)):
+            column_info = {}
+
+            # for each column, figure out the type and name
+            raw_column_type = str(column_types[column_idx])
+            column_name = column_names[column_idx]
+            column = columns[column_idx]
+            column_info["name"] = str(column_name)
+            column_info["rawType"] = raw_column_type
+            column_info["type"] = map_dtype_to_dw_type(raw_column_type, "string" if pd.api.types.is_string_dtype(column) else None)
+            column_info_list.append(column_info)
+
+        return pd_dumps({
+            **extra_props,
+            "shape": get_df_shape(df),
+            "rows": data,
+            "columns": column_info_list
+        })
+
+    def get_df_payload(df, row_limit, **extra_props):
+        return get_df_payload_v0(df, row_limit, **extra_props)
+
+    # namespace exports
+    return dict(
+        is_missing=is_missing,
+        get_df_shape=get_df_shape,
+        get_index_column_name=get_index_column_name,
+        get_inferred_dtype=get_inferred_dtype,
+        map_dtype_to_dw_type=map_dtype_to_dw_type,
+        serialize=serialize,
+        serialize_row=serialize_row,
+        pd_dumps=pd_dumps,
+        get_df_payload=get_df_payload
+    )
+
+def __DW_CONVERT_TO_PANDAS__(data_type, data):
+    from builtins import Exception, type
+    import sys
+    df = None
+    conversion_method = None
+    try:
+        if "xarray" in sys.modules:
+            if data_type == "xarray.core.dataarray.DataArray":
+                import pandas as pd
+                data_numpy = data.to_numpy()
+                df = pd.DataFrame(data_numpy.tolist() if len(data_numpy.shape) > 2 else data_numpy)
+        if data_type == "builtins.dict":
+            def convert_dict_to_pandas(data):
+                from builtins import Exception, any, isinstance, len, list, map, print, tuple
+                import numpy as np
+                import pandas as pd
+                nonlocal conversion_method
+                conversion_method = "PandasFromDictOrientIndex"
+                try:
+                    if not any(map(lambda x: isinstance(x, (list, tuple, np.ndarray)), data.values())):
+                        df = pd.DataFrame.from_dict(data, orient='index')
+                        return df
+                except Exception:
+                    pass
+                conversion_method = "PandasFromDictOrientColumns"
+                try:
+                    df = pd.DataFrame.from_dict(data)
+                    return df
+                except Exception:
+                    pass
+                conversion_method = "DictToDataFrameWide"
+                def import_dict_value(v):
+                    if not isinstance(v, (list, tuple, np.ndarray, pd.Series)):
+                        return [v]
+                    else:
+                        v_numpy = np.empty(len(v), dtype=object)
+                        v_numpy[:] = list(v)
+                        return np.array(v_numpy, dtype=object)
+                
+                df = pd.DataFrame.from_dict({
+                    k: import_dict_value(v) for k, v in data.items()
+                }, orient="index").transpose().fillna(value=np.nan)
+                return df
+            
+            df = convert_dict_to_pandas(data)
+        if "tensorflow" in sys.modules:
+            if data_type == "tensorflow.python.framework.ops.EagerTensor":
+                import pandas as pd
+                data_numpy = data.numpy()
+                df = pd.DataFrame(data_numpy.tolist() if len(data_numpy.shape) > 2 else data_numpy)
+        if data_type == "builtins.list":
+            def convert_list_to_pandas(data):
+                from builtins import Exception, hasattr, len, print
+                import numpy as np
+                import pandas as pd
+                import sys
+                nonlocal conversion_method
+                conversion_method = "PandasDataFrameConstructor"
+                try:
+                    df = pd.DataFrame(data)
+                    return df
+                except Exception:
+                    pass
+                conversion_method = "NumpyArrayTorchNoGrad"
+                try:
+                    if 'torch' in sys.modules and hasattr(sys.modules['torch'], 'no_grad'):
+                        import torch
+                        with torch.no_grad():
+                            df = pd.DataFrame(np.array(data))
+                        return df
+                except Exception:
+                    pass
+                conversion_method = "NumpyArrayWithObjectDtypeTorchNoGrad"
+                try:
+                    if 'torch' in sys.modules and hasattr(sys.modules['torch'], 'no_grad'):
+                        import torch
+                        with torch.no_grad():
+                            data_numpy = np.empty(len(data), dtype=object)
+                            data_numpy[:] = data
+                            df = pd.DataFrame(np.array(data_numpy, dtype=object))
+                        return df
+                except Exception:
+                    pass
+                conversion_method = "NumpyArray"
+                try:
+                    df = pd.DataFrame(np.array(data))
+                    return df
+                except Exception:
+                    pass
+                conversion_method = "NumpyArrayWithObjectDtype"
+                data_numpy = np.empty(len(data), dtype=object)
+                data_numpy[:] = data
+                df = pd.DataFrame(np.array(data_numpy, dtype=object))
+                return df
+            
+            df = convert_list_to_pandas(data)
+        if "numpy" in sys.modules:
+            if data_type == "numpy.ndarray":
+                def convert_ndarray_to_pandas(data):
+                    from builtins import Exception, len, print
+                    import pandas as pd
+                    nonlocal conversion_method
+                    conversion_method = "PandasDataFrameConstructor"
+                    try:
+                        df = pd.DataFrame(data)
+                        return df
+                    except Exception:
+                        pass
+                    conversion_method = "FlattenDimensions"
+                    df = pd.DataFrame(data.tolist())
+                    return df
+                
+                df = convert_ndarray_to_pandas(data)
+        if "pandas" in sys.modules:
+            if data_type == "pandas.core.frame.DataFrame":
+                df = data
+        if "pandas" in sys.modules:
+            if data_type == "pandas.core.series.Series":
+                df = data.to_frame()
+        if "polars" in sys.modules:
+            if data_type == "polars.dataframe.frame.DataFrame":
+                df = data.to_pandas()
+        if "polars" in sys.modules:
+            if data_type == "polars.series.series.Series":
+                df = data.to_pandas().to_frame()
+        if "pyspark" in sys.modules:
+            if data_type == "pyspark.sql.dataframe.DataFrame":
+                df = data.toPandas()
+        if "pyspark" in sys.modules:
+            if data_type == "pyspark.sql.dataframe.DataFrame":
+                df = data.toPandas()
+        if "torch" in sys.modules:
+            if data_type == "torch.Tensor":
+                import pandas as pd
+                data_tmp = data.detach().cpu()
+                data_tmp = data_tmp.to_dense() if data_tmp.is_sparse else data_tmp
+                data_numpy = data_tmp.numpy()
+                df = pd.DataFrame(data_numpy.tolist() if len(data_numpy.shape) > 2 else data_numpy)
+        return df, conversion_method
+    except Exception:
+        return None, conversion_method
+def __DW_OUTPUT_FORMATTER__(api):
+    import IPython
+    import traitlets
+    import traceback
+    from builtins import classmethod, dict, Exception, ImportError, list, set, str, type
+
+    DW_JSON_MIME_TYPE = 'application/vnd.microsoft.datawrangler.viewer.v0+json'
+    max_num_rows_to_preload = 50
+    tmp_vars = api["output_cache"]
+    io = api["io"]
+    supported_types = set()
+
+    class DataWranglerFormatter(IPython.core.formatters.BaseFormatter):
+        format_type = traitlets.Unicode(DW_JSON_MIME_TYPE)
+        print_method = traitlets.ObjectName('_repr_dw_')
+
+    class DataWrangler(IPython.display.DisplayObject):
+        """
+        Data Wrangler formatter.
+        """
+
+        is_supported = False
+
+        def __init__(self, expr_val):
+            import time
+            start_time = time.time()
+            props = {}
+
+            try:
+                nonlocal supported_types
+                type_str = type_to_str(type(expr_val))
+
+                pandas_supported = is_pandas_supported()
+                if pandas_supported and type_str in supported_types:
+                    pandas_df, conversion_method = api["pandas_converter"](type_str, expr_val)
+                    self.is_supported = pandas_df is not None
+
+                # Base telemetry props
+                props = { "type": type_str, "conversionMethod": conversion_method, "supportedTypes": list(supported_types) }
+
+                if self.is_supported:
+                    import uuid
+                    self.id = str(uuid.uuid4())
+
+                    # create a shallow copy in case a displayed object is mutated in the same cell
+                    if pandas_df is expr_val:
+                        pandas_df = pandas_df.copy(deep=False)
+
+                    tmp_vars[self.id] = {
+                        "original": expr_val,
+                        "converted": pandas_df,
+                        "conversion_method": conversion_method,
+                        "original_type": type_str,
+                    }
+
+                    io["log_telemetry"](name="OutputConverted", props=props, measures={"conversionTime": time.time() - start_time})
+                elif type_str in supported_types:
+                    props["isPandasSupported"] = pandas_supported
+                    io["log_exception"](
+                        error_details={
+                            "name": "OutputConversionError",
+                            "message": "Failed to convert"
+                        },
+                        props=props,
+                        measures={"conversionTime": time.time() - start_time}
+                    )
+                else:
+                    # This can be called for subclasses, so we don't actually want to log them to avoid PII.
+                    # We just want to check here if we're failing because we don't have pandas or it's a subtype.
+                    del props["type"]
+                    props["isPandasSupported"] = pandas_supported
+                    io["log_telemetry"](name="OutputConversionSkipped", props=props, measures={"conversionTime": time.time() - start_time})
+            except Exception:
+                # We shouldn't receive errors here, but if we do we can send telemetry for it.
+                io["log_exception"](
+                    props=props,
+                    measures={"conversionTime": time.time() - start_time}
+                )
+
+        @classmethod
+        def formatter(cls, var, **kwargs):
+            s = cls(var, **kwargs)
+            return s._repr_dw_()
+
+        def _repr_mimebundle_(self):
+            mime_bundle = {}
+            try:
+                if self.is_supported:
+                    mime_bundle[DW_JSON_MIME_TYPE] = self._gen_json()
+            except Exception:
+                # need to catch and print exception since it is user visible
+                traceback.print_exc()
+            return mime_bundle
+
+        def _repr_dw_(self):
+            try:
+                return self._gen_json()
+            except Exception:
+                # need to catch and print exception since it is user visible
+                traceback.print_exc()
+
+        def _gen_json(self):
+            if self.is_supported:
+                kwargs = {"ref": self.id}
+                return api["pandas_transport"]["get_df_payload"](tmp_vars[self.id]["converted"], max_num_rows_to_preload, **kwargs)
+
+    def register_dw_mimetype():
+        """Register _repr_dw_ with the IPython display mechanism."""
+        shell = IPython.get_ipython()
+        if not shell:
+            return
+        display_formatter = shell.display_formatter
+        display_formatter.formatters.setdefault(
+            DW_JSON_MIME_TYPE,
+            DataWranglerFormatter(parent=display_formatter),
+        )
+
+    def enable_formatter_for_types(*args):
+        """
+        Enables Data Wrangler as the default IPython formatter for the given type.
+        """
+        nonlocal supported_types
+        supported_types = set()
+        register_dw_mimetype()
+        formatters = IPython.get_ipython().display_formatter.formatters
+        for arg in args:
+            supported_types.add(type_to_str(arg) if type(arg) == type else arg)
+            if type(arg) == str:
+                try:
+                    path, base = arg.rsplit(".", 1)
+                except Exception:
+                    path = "builtins"
+                    base = arg
+                formatters[DW_JSON_MIME_TYPE].for_type_by_name(
+                    path, base, DataWrangler.formatter
+                )
+            else:
+                formatters[DW_JSON_MIME_TYPE].for_type(
+                    arg, DataWrangler.formatter
+                )
+
+    def disable_formatter():
+        """
+        Disables the formatter.
+        """
+        nonlocal supported_types
+        formatters = IPython.get_ipython().display_formatter.formatters
+        supported_types = []
+        for key in list(formatters.keys()):
+            # Only explicitly disable the MIME type we are registered with.
+            # This will allow us to run with several MIME type versions concurrently.
+            if key == DW_JSON_MIME_TYPE:
+                formatters.pop(key)
+
+    def type_to_str(type):
+        return f'{type.__module__}.{type.__qualname__}'
+
+    def is_pandas_supported():
+        try:
+            import pandas as _
+            return True
+        except ImportError:
+            return False
+
+    # namespace exports
+    return dict(
+        enable_for_types=enable_formatter_for_types,
+        disable=disable_formatter
+    )
+__DW_OUTPUT_FORMATTER_ID__ = "output-" + __DW_GET_SESSION_ID__()
+__DW_OUTPUT_FORMATTER_CACHE__ = __DW_SCOPE__.get("output_cache", {})
+__DW_SCOPE__["output_cache"] = __DW_OUTPUT_FORMATTER_CACHE__
+__DW_OUTPUT_FORMATTER_API__ = {
+    "output_cache": __DW_OUTPUT_FORMATTER_CACHE__,
+    "io": __DW_IO__(__DW_OUTPUT_FORMATTER_ID__, async_type="display"),
+    "pandas_transport": __DW_PANDAS_TRANSPORT__(),
+    "pandas_converter": __DW_CONVERT_TO_PANDAS__,
+}
+__DW_OUTPUT_FORMATTER__ = __DW_OUTPUT_FORMATTER__(__DW_OUTPUT_FORMATTER_API__)
+__DW_SCOPE__[__DW_OUTPUT_FORMATTER_ID__] = __DW_OUTPUT_FORMATTER__
+__DW_OUTPUT_FORMATTER__["enable_for_types"]("pandas.core.frame.DataFrame", "pandas.core.series.Series")
+import builtins as __DW_BUILTINS__
+__DW_BUILTINS__.print(__DW_OUTPUT_FORMATTER_ID__)
+del __DW_BUILTINS__
+del __DW_OUTPUT_FORMATTER_ID__
+del __DW_IO__
+del __DW_GET_SESSION_ID__
+del __DW_OUTPUT_FORMATTER_CACHE__
+del __DW_PANDAS_TRANSPORT__
+del __DW_CONVERT_TO_PANDAS__
+del __DW_OUTPUT_FORMATTER__
+del __DW_OUTPUT_FORMATTER_API__
+19:33:23.768 [trace] Execution Id:ms-toolsai.datawrangler-7. Start Code execution.
+19:33:23.768 [trace] Execution Id:ms-toolsai.datawrangler-7. Send code for execution.
+19:33:23.768 [trace] Execution Id:ms-toolsai.datawrangler-7. Execution Request Sent to Kernel.
+19:33:23.787 [trace] Execution Id:ms-toolsai.datawrangler-7. Executed successfully.
+19:33:23.787 [debug] Execution of code ms-toolsai.datawrangler-7 completed in 19ms
+19:33:23.788 [trace] ms-toolsai.datawrangler took 20ms during kernel startup
