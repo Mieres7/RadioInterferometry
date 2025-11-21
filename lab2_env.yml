@@ -12,13 +12,14 @@ dependencies:
   - scipy
 
   # Versiones específicas solicitadas
-  - numba=0.62.1
-  - cupy=13.6.0
 
   # CUDA Toolkit exacto solicitado
   # (release 12.9, V12.9.41)
-  - cuda-toolkit=12.9.0
+  - cuda-toolkit=13.0
   # - cuda-nvcc=12.9.0
+  - numba=0.62.1
+  - cupy=13.6.0
+  - numba-cuda=0.20.1
 
   # Para Jupyter
   - jupyterlab
