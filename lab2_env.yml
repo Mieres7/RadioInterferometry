@@ -10,6 +10,7 @@ dependencies:
   # Paquetes científicos
   - numpy
   - scipy
+  - matplotlib
 
   # Versiones específicas solicitadas
 

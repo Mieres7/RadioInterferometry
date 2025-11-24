@@ -114,5 +114,128 @@ def grid_visibilities(V, uvw_lambda, du, dv, Npix=256, use_gpu=True):
 
     return VG, WG
 
+# 1. KERNEL SIMPLE (Sin cambios, sirve igual)
+@cuda.jit
+def _grid_kernel(u, v, V_real, V_imag, du, dv, VG_real, VG_imag, WG, Npix):
+    idx = cuda.grid(1)
+    n = u.size
+    if idx >= n:
+        return
+
+    # Calcular coordenadas de grilla
+    i = int(math.floor(u[idx] / du + 0.5)) + Npix // 2
+    j = int(math.floor(v[idx] / dv + 0.5)) + Npix // 2
+
+    if i < 0 or i >= Npix or j < 0 or j >= Npix:
+        return
+
+    # Peso unitario implícito
+    w = 1.0 
+    
+    cuda.atomic.add(VG_real, (j, i), V_real[idx])
+    cuda.atomic.add(VG_imag, (j, i), V_imag[idx])
+    cuda.atomic.add(WG, (j, i), w)
+
+# 2. KERNEL CON CONVOLUCIÓN (Sin cambios)
+@cuda.jit
+def _grid_kernel_KB(u, v, V_real, V_imag, du, dv, kernel, VG_real, VG_imag, WG, Npix):
+    idx = cuda.grid(1)
+    n = u.size
+    if idx >= n:
+        return
+
+    center_i = int(math.floor(u[idx] / du + 0.5)) + Npix // 2
+    center_j = int(math.floor(v[idx] / dv + 0.5)) + Npix // 2
+
+    if center_i < 0 or center_i >= Npix or center_j < 0 or center_j >= Npix:
+        return
+
+    kernel_x, kernel_y = kernel.shape
+    half_x = kernel_x // 2
+    half_y = kernel_y // 2
+
+    vis_real = V_real[idx]
+    vis_imag = V_imag[idx]
+    w_in = 1.0
+
+    for k_i in range(kernel_x):
+        for k_j in range(kernel_y):
+            i = center_i + (k_i - half_x)
+            j = center_j + (k_j - half_y)
+
+            if 0 <= i < Npix and 0 <= j < Npix:
+                weight = w_in * kernel[k_i, k_j]
+                cuda.atomic.add(VG_real, (j, i), weight * vis_real)
+                cuda.atomic.add(VG_imag, (j, i), weight * vis_imag)
+                cuda.atomic.add(WG, (j, i), weight)
+
+def grid_visibilities_cuda(V, uvw_lambda, du, dv, Npix=256, threads_per_block=1024, conv_kernel=None):
+    """
+    Grids complex visibilities onto a single (u, v) grid using numba cuda
+    
+    Salida: 
+       VG: (Npix, Npix) complex128
+       WG: (Npix, Npix) float64
+    """
+    
+    # Extraemos todas las coordenadas u y v de todas las frecuencias y las hacemos 1D
+    u_all = np.ascontiguousarray(uvw_lambda[..., 0].ravel())
+    v_all = np.ascontiguousarray(uvw_lambda[..., 1].ravel())
+    
+    # Extraemos todas las visibilidades complejas y las hacemos 1D
+    V_all = np.ascontiguousarray(V.ravel())
+    
+    # Verificación de integridad
+    assert u_all.size == V_all.size, "Error: Dimensiones de UVW y V no coinciden al aplanar."
+    
+    n_total_points = u_all.size
+
+    # 2. Mover datos a GPU
+    d_u = cuda.to_device(u_all)
+    d_v = cuda.to_device(v_all)
+    d_V_real = cuda.to_device(np.ascontiguousarray(V_all.real))
+    d_V_imag = cuda.to_device(np.ascontiguousarray(V_all.imag))
+    
+    # 3. Reservar memoria para UNA sola imagen acumulada (2D)
+    d_VG_real = cuda.device_array((Npix, Npix), dtype=np.float64)
+    d_VG_imag = cuda.device_array((Npix, Npix), dtype=np.float64)
+    d_WG = cuda.device_array((Npix, Npix), dtype=np.float64)
+
+    # Inicializar a cero
+    d_VG_real[:] = 0
+    d_VG_imag[:] = 0
+    d_WG[:] = 0
+
+    # 4. Lanzar Kernel
+    blocks_per_grid = (n_total_points + threads_per_block - 1) // threads_per_block
+
+    if conv_kernel is not None:
+        d_kernel = cuda.to_device(np.ascontiguousarray(conv_kernel))
+        _grid_kernel_KB[blocks_per_grid, threads_per_block](
+            d_u, d_v, d_V_real, d_V_imag, 
+            du, dv, d_kernel, d_VG_real, d_VG_imag, d_WG, Npix
+        )
+    else:
+        _grid_kernel[blocks_per_grid, threads_per_block](
+            d_u, d_v, d_V_real, d_V_imag, 
+            du, dv, d_VG_real, d_VG_imag, d_WG, Npix
+        )
+
+    # 5. Copiar resultados de vuelta a CPU
+    VG_real = d_VG_real.copy_to_host()
+    VG_imag = d_VG_imag.copy_to_host()
+    WG = d_WG.copy_to_host() # Ahora es 2D (Npix, Npix)
+
+    # 6. Normalización Final
+    VG = np.zeros((Npix, Npix), dtype=np.complex128)
+    
+    # Evitar división por cero
+    mask = WG > 0
+    VG[mask] = (VG_real[mask] + 1j * VG_imag[mask]) / WG[mask]
+    
+    # Retornamos las grillas 2D
+    return VG, WG
+
+
 def to_fourier(visibilities):
     return fftshift(ifft2(ifftshift(visibilities)))
