@@ -3,6 +3,7 @@ Generación de Gráficos
 """
 
 import numpy as np
+import cupy as cp
 import matplotlib.pyplot as plt
 import math
 
@@ -144,98 +145,82 @@ def plot_antennas(enu_coords, labels=True, title="Configuración de Antenas", un
 
 
 
-def plot_all_dirty_images(VG, cell_size_arcsec):
+def plot_dirty_image(VG, pixel_size_arcsec=None, title="Dirty Image"):
     """
-    Calcula y grafica la "dirty image" para cada canal de frecuencia en el cubo VG.
+    Calcula y grafica la Dirty Image a partir de la grilla de visibilidades.
     """
-    N, _, num_channels = VG.shape
+    # 1. Detectar backend (GPU/CPU)
+    xp = cp.get_array_module(VG)
     
-    # Configura una grilla de subplots para mostrar todas las imágenes
-    cols = math.ceil(math.sqrt(num_channels))
-    rows = math.ceil(num_channels / cols)
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 6, rows * 5), squeeze=False)
-    fig.suptitle('Dirty Images por Canal de Frecuencia', fontsize=16)
+    # 2. Transformada Inversa (IFFT)
+    # Secuencia: ifftshift -> ifft2 -> fftshift para centrar la imagen
+    image_complex = to_fourier(VG)
+    
+    # 3. Extraer parte Real y mover a CPU para graficar
+    if xp == cp:
+        image_real = cp.asnumpy(image_complex.real)
+    else:
+        image_real = image_complex.real
 
-    # Calcula el campo de visión para etiquetar los ejes correctamente
-    image_fov_arcsec = N * cell_size_arcsec
-    extent = [-image_fov_arcsec / 2, image_fov_arcsec / 2, -image_fov_arcsec / 2, image_fov_arcsec / 2]
-    extent=[-1,1,-1,1]
+    # 4. Graficar
+    plt.figure(figsize=(8, 8))
+    
+    extent = None
+    xlabel = "Pixeles"
+    if pixel_size_arcsec:
+        N = VG.shape[0]
+        fov = (N * pixel_size_arcsec) / 2
+        extent = [-fov, fov, -fov, fov]
+        xlabel = "Arcsec"
 
-    for i in range(num_channels):
-        ax = axes[i // cols, i % cols]
-        
-        # Selecciona el canal y calcula la imagen
-        image = to_fourier(VG[..., i])
-        intensity = np.abs(image)
-        
-        im = ax.imshow(intensity, origin='lower', cmap='inferno', 
-                       extent=extent)
-        
-        ax.set_title(f'Canal {i}')
-        ax.set_xlabel('Offset RA (arcsec)')
-        ax.set_ylabel('Offset Dec (arcsec)')
-
-        # 1. Crea un divisor para el eje actual
-        divider = make_axes_locatable(ax)
-        # 2. Añade un nuevo eje a la derecha, del 5% del ancho de la imagen y con un poco de padding
-        cax = divider.append_axes("right", size="5%", pad=0.1)
-        # 3. Dibuja el colorbar en ese nuevo eje específico
-        fig.colorbar(im, cax=cax, label='Intensidad')
-
-    # Oculta los ejes de los subplots que no se usen
-    for i in range(num_channels, rows * cols):
-        axes[i // cols, i % cols].axis('off')
-
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.imshow(image_real, origin='lower', cmap='inferno', extent=extent)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(xlabel)
+    plt.colorbar(label="Intensidad (Jy/beam)")
     plt.show()
+    
+    return image_real
 
-
-
-
-def calculate_and_plot_psf(WG, cell_size_arcsec):
+def plot_psf(WG, pixel_size_arcsec=None, log_scale=False, title="PSF (Dirty Beam)"):
     """
-    Calcula y grafica la PSF ("dirty beam") para cada canal de frecuencia.
+    Calcula y grafica la PSF a partir de la grilla de pesos.
     """
-    N, _, num_channels = WG.shape
+    # 1. Detectar backend
+    xp = cp.get_array_module(WG)
+    
+    # 2. Transformada Inversa de los pesos
+    psf_complex = xp.fft.fftshift(xp.fft.ifft2(xp.fft.ifftshift(WG)))
+    
+    # 3. Magnitud absoluta y mover a CPU
+    if xp == cp:
+        psf_abs = cp.asnumpy(cp.abs(psf_complex))
+    else:
+        psf_abs = np.abs(psf_complex)
 
-    cols = math.ceil(math.sqrt(num_channels))
-    rows = math.ceil(num_channels / cols)
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 5, rows * 5), squeeze=False)
-    fig.suptitle('PSF ("Dirty Beam") por Canal de Frecuencia', fontsize=16)
+    # 4. Graficar
+    plt.figure(figsize=(8, 8))
+    
+    extent = None
+    xlabel = "Pixeles"
+    if pixel_size_arcsec:
+        N = WG.shape[0]
+        fov = (N * pixel_size_arcsec) / 2
+        extent = [-fov, fov, -fov, fov]
+        xlabel = "Arcsec"
 
-    image_fov_arcsec = N * cell_size_arcsec
-    extent = [-image_fov_arcsec / 2, image_fov_arcsec / 2, -image_fov_arcsec / 2, image_fov_arcsec / 2]
-    extent=[-1,1,-1,1]
+    # Configuración de escala
+    norm = None
+    if log_scale:
+        from matplotlib.colors import LogNorm
+        # Evitamos log(0) usando un vmin pequeño relativo al máximo
+        norm = LogNorm(vmin=max(psf_abs.max()*1e-4, 1e-10), vmax=psf_abs.max())
 
-    for i in range(num_channels):
-        ax = axes[i // cols, i % cols]
-        
-        # Para la PSF, usamos la grilla de pesos WG
-        # Normalizamos la grilla de pesos para que el pico central de la PSF sea 1
-        wg_channel = WG[..., i]
-        if np.max(wg_channel) > 0:
-            wg_channel = wg_channel / np.max(wg_channel)
-
-        psf = to_fourier(wg_channel)
-        intensity = np.abs(psf)
-        
-        im = ax.imshow(intensity, origin='lower', cmap='viridis', 
-                       extent=extent)
-        
-        ax.set_title(f'PSF Canal {i}')
-        ax.set_xlabel('Offset RA (arcsec)')
-        ax.set_ylabel('Offset Dec (arcsec)')
-
-        
-        # 1. Crea un divisor para el eje actual
-        divider = make_axes_locatable(ax)
-        # 2. Añade un nuevo eje a la derecha, del 5% del ancho de la imagen y con un poco de padding
-        cax = divider.append_axes("right", size="5%", pad=0.1)
-        # 3. Dibuja el colorbar en ese nuevo eje específico
-        fig.colorbar(im, cax=cax, label='Respuesta Normalizada')
-
-    for i in range(num_channels, rows * cols):
-        axes[i // cols, i % cols].axis('off')
-
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.imshow(psf_abs, origin='lower', cmap='viridis', extent=extent, norm=norm)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(xlabel)
+    plt.colorbar(label="Respuesta Normalizada")
     plt.show()
+    
+    return psf_abs
