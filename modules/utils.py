@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from numba import cuda
 
 from modules.coords import ecef_to_enu
-from modules.interferometry import grid_visibilities, grid_visibilities_cuda
+from modules.gridder import grid_visibilities
 
 def degree_to_time(theta, is_rad=False):
     if is_rad:
@@ -96,100 +96,68 @@ def compare_arrays(arr1, arr2, rtol=1e-5, atol=1e-8, name="Arreglos"):
         return False
     
 
-
-
-
 def benchmark_gridding(V, uvw, du, dv, grid_sizes=[256, 512, 1024, 2048]):
     """
-    Ejecuta el benchmark comparativo entre CPU, CuPy y Numba.
-    Retorna un DataFrame con los resultados.
+    Ejecuta un benchmark comparativo entre CPU, CuPy y Numba,
+    incluyendo speedups relativos entre métodos.
     """
     results = []
     
-    # Pre-calentamiento para Numba (compilación JIT)
+    # Pre-calentamiento / JIT warm-up para Numba
     print("Calentando kernels de Numba...")
     try:
-        # Ejecución dummy pequeña
-        grid_visibilities_cuda(V[:100], uvw[:100], du, dv, Npix=256)
+        grid_visibilities(V[:100], uvw[:100], du, dv, Npix=256, mode='numba')
     except Exception as e:
-        print(f"Warning: Warm-up falló ({e}), la primera medición puede ser lenta.")
+        print(f"Warning: Warm-up falló ({e}), la primera medición puede ser más lenta.")
 
     for N in grid_sizes:
         print(f"--- Midiendo para N = {N}x{N} ---")
         
-        # 1. CPU (NumPy)
-        # Nota: Si N es muy grande, la CPU puede tardar mucho. Puedes limitar N para CPU.
-        if N <= 1024: 
-            start = time.perf_counter()
-            _, _ = grid_visibilities(V, uvw, du, dv, Npix=N, use_gpu=False)
-            end = time.perf_counter()
-            time_cpu = end - start
-        else:
-            time_cpu = np.nan # Omitir para ahorrar tiempo
-            
-        # 2. GPU (CuPy Vectorizado)
-        # Sincronizamos antes de empezar
+        # ======================
+        # 1. CPU
+        # ======================
+        start = time.perf_counter()
+        _, _ = grid_visibilities(V, uvw, du, dv, Npix=N, mode='numpy')
+        end = time.perf_counter()
+        time_cpu = end - start
+        
+        # ======================
+        # 2. CuPy (GPU)
+        # ======================
         cp.cuda.Stream.null.synchronize()
         start = time.perf_counter()
-        _, _ = grid_visibilities(V, uvw, du, dv, Npix=N, use_gpu=True)
-        # Sincronizamos antes de terminar para asegurar que la GPU terminó
+        _, _ = grid_visibilities(V, uvw, du, dv, Npix=N, mode='cupy')
         cp.cuda.Stream.null.synchronize()
         end = time.perf_counter()
         time_cupy = end - start
         
-        # 3. GPU (Numba Kernels)
-        # Nota: Tu función grid_visibilities_cuda ya tiene las transferencias
-        # incluidas, así que es una comparación justa "end-to-end".
+        # ======================
+        # 3. Numba CUDA (GPU)
+        # ======================
         cuda.synchronize()
         start = time.perf_counter()
-        _, _ = grid_visibilities_cuda(V, uvw, du, dv, Npix=N)
+        _, _ = grid_visibilities(V, uvw, du, dv, Npix=N,mode='numba')
         cuda.synchronize()
         end = time.perf_counter()
         time_numba = end - start
         
-        # Guardar resultados
+        # ======================
+        # Guarda resultados
+        # ======================
         results.append({
             "Grid Size": N,
             "CPU (s)": time_cpu,
             "CuPy (s)": time_cupy,
             "Numba (s)": time_numba,
-            "Speedup Numba vs CPU": time_cpu / time_numba if time_cpu > 0 else 0
+
+            # Speedups básicos
+            "Speedup Numba vs CPU": time_cpu / time_numba if time_numba > 0 else 0,
+            "Speedup CuPy vs CPU":  time_cpu / time_cupy if time_cupy > 0 else 0,
+            "Speedup Numba vs CuPy": time_cupy / time_numba if time_numba > 0 else 0
         })
         
         print(f"   CPU: {time_cpu:.4f}s | CuPy: {time_cupy:.4f}s | Numba: {time_numba:.4f}s")
 
-    df = pd.DataFrame(results)
-    return df
+    return pd.DataFrame(results)
 
-def plot_benchmark_results(df):
-    """
-    Grafica los tiempos de ejecución y el Speedup.
-    """
-    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
-    
-    # Gráfico 1: Tiempos de Ejecución (Escala Logarítmica)
-    # Usamos log porque la diferencia entre CPU y GPU suele ser enorme
-    df.plot(x="Grid Size", y=["CPU (s)", "CuPy (s)", "Numba (s)"], 
-            kind="bar", ax=axes[0], logy=True)
-    axes[0].set_title("Tiempo de Ejecución (Escala Log)")
-    axes[0].set_ylabel("Tiempo (segundos)")
-    axes[0].grid(True, which="both", linestyle="--", alpha=0.5)
-    
-    # Gráfico 2: Speedup (Factor de Aceleración)
-    # Calculamos Speedup vs CuPy también para ver cuál GPU gana
-    df["Speedup Numba vs CuPy"] = df["CuPy (s)"] / df["Numba (s)"]
-    
-    df.plot(x="Grid Size", y=["Speedup Numba vs CuPy"], 
-            kind="bar", ax=axes[1], color="orange")
-    axes[1].set_title("Speedup: Numba Kernels vs CuPy Vectorizado")
-    axes[1].set_ylabel("Factor de Aceleración (X veces más rápido)")
-    axes[1].grid(True, linestyle="--", alpha=0.5)
-    
-    plt.tight_layout()
-    plt.show()
 
-# --- EJECUCIÓN DEL TEST ---
-# Asegúrate de usar tus variables reales (V, uvw_lambda, etc.)
-# df_results = benchmark_gridding(V_con_ruido, uvw_lambda, du, dv, grid_sizes=[256, 512, 1024, 2048])
-# print(df_results)
-# plot_benchmark_results(df_results)

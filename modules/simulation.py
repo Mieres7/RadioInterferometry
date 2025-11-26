@@ -10,7 +10,7 @@ from modules.astronomy import ra_dec_to_radians, H_range
 from modules.interferometry import generate_random_sources, uvw_to_lambda_range, visibilities_from_sources
 from modules.utils import read_cfg_to_enu
 
-def visibilities_simulation(config):
+def visibilities_simulation(config, get_grid_config=False):
     """
     Obtains visibilities from a given configuration
     """ 
@@ -46,7 +46,7 @@ def visibilities_simulation(config):
     ra_src = ra_dec_to_radians(sirius_ra)
 
     # Rango de horas angulo
-    times_utc, H, lst = H_range(
+    _, H, _ = H_range(
         ra_rad=ra_src,
         utc_start=utc_start,
         utc_end=utc_end,
@@ -61,12 +61,14 @@ def visibilities_simulation(config):
     if interferometer["name"] == "VLA":
         frequencies = select_vla_frequencies(interferometer["band_name"], n_freqs)
 
-    uvw_lambda, wavelengths = uvw_to_lambda_range(uvw, frequencies)
+    uvw_lambda, _ = uvw_to_lambda_range(uvw, frequencies)
 
     ra0_deg = np.degrees(ra_dec_to_radians(SOURCES_CATALOG['Sirius']['RA']))  # Sirius A
     dec0_deg = np.degrees(ra_dec_to_radians(SOURCES_CATALOG['Sirius']['Dec']))
     sources = generate_random_sources(ra0_deg, dec0_deg, N=n_sources, max_offset_deg=max_offset_deg, flux_range=flux_range, seed=seed)
 
-    V, omega, l_src, m_src, n_src = visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg)
+    V, _, _, _, _ = visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg)
 
     return V, uvw, uvw_lambda, frequencies, baselines_enu
+
+

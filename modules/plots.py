@@ -7,7 +7,7 @@ import cupy as cp
 import matplotlib.pyplot as plt
 import math
 
-from .interferometry import uvw_to_lambda, to_fourier
+from .interferometry import uvw_to_lambda, to_fourier, to_image
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def plot_uv_coverage(
@@ -154,8 +154,8 @@ def plot_dirty_image(VG, pixel_size_arcsec=None, title="Dirty Image"):
     
     # 2. Transformada Inversa (IFFT)
     # Secuencia: ifftshift -> ifft2 -> fftshift para centrar la imagen
-    image_complex = to_fourier(VG)
-    
+    image_complex = to_image(VG)
+
     # 3. Extraer parte Real y mover a CPU para graficar
     if xp == cp:
         image_real = cp.asnumpy(image_complex.real)
@@ -224,3 +224,68 @@ def plot_psf(WG, pixel_size_arcsec=None, log_scale=False, title="PSF (Dirty Beam
     plt.show()
     
     return psf_abs
+
+
+def plot_time_vs_grid(df):
+    """
+    Grafica el tiempo de ejecución vs el tamaño de la grilla (N)
+    replicando el estilo de la imagen de referencia.
+    
+    Parámetros:
+    - df: DataFrame con las columnas 'Grid Size', 'CPU (s)', 'CuPy (s)', 'Numba (s)'
+    """
+    
+    # Crear la figura
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Truco visual: Convertimos 'Grid Size' a string para que el eje X 
+    # trate los valores como categorías equidistantes. 
+    # Esto hace que la distancia entre 256->512 sea igual que 2048->4096,
+    # tal como en tu imagen de referencia.
+    x_labels = df["Grid Size"].astype(str)
+    
+    # 1. Plot CPU (Azul, círculo, línea punteada) -> 'bo--'
+    # Usamos linewidth y markersize para que se vea robusto
+    ax.plot(x_labels, df["CPU (s)"], 'bo--', label='CPU Numpy', 
+            linewidth=1.5, markersize=6)
+
+    # 2. Plot GPU CuPy (Verde, cuadrado, línea sólida) -> 'gs-'
+    ax.plot(x_labels, df["CuPy (s)"], 'gs-', label='GPU CuPy', 
+            linewidth=1.5, markersize=6)
+
+    # 3. Plot GPU Numba (Rojo, triángulo, línea punto-guión) -> 'r^ -.'
+    ax.plot(x_labels, df["Numba (s)"], 'r^-.', label='GPU Numba', 
+            linewidth=1.5, markersize=6)
+
+    # --- Estilizado ---
+    
+    # Escala Logarítmica en Y (Crucial para ver las diferencias)
+    ax.set_yscale('log')
+    
+    # Etiquetas y Título
+    ax.set_xlabel('Tamaño de Grilla (N)', fontsize=11)
+    ax.set_ylabel('Tiempo de Ejecución (s) [Escala Log]', fontsize=11)
+    ax.set_title('Comparación de Rendimiento: Tiempo vs Tamaño de Grilla', fontsize=13)
+    
+    # Grid (Rejilla)
+    # 'which="both"' activa las líneas para la escala logarítmica (mayores y menores)
+    ax.grid(True, which="both", linestyle="--", alpha=0.5)
+    
+    # Leyenda
+    ax.legend(loc='upper left', frameon=True, fancybox=True, framealpha=0.9)
+    
+    plt.tight_layout()
+    plt.show()
+
+def plot_speedups(df):
+    plt.figure(figsize=(8,5))
+    plt.plot(df["Grid Size"], df["Speedup Numba vs CPU"], marker="o", label="Numba vs CPU")
+    plt.plot(df["Grid Size"], df["Speedup CuPy vs CPU"], marker="o", label="CuPy vs CPU")
+    plt.plot(df["Grid Size"], df["Speedup Numba vs CuPy"], marker="o", label="Numba vs CuPy")
+
+    plt.xlabel("Grid Size")
+    plt.ylabel("Speedup (×)")
+    plt.grid(True)
+    plt.legend()
+    plt.title("Comparación de Speedups")
+    plt.show()
