@@ -86,4 +86,3 @@ def adjoint_op(visibilities):
 
     
 
-

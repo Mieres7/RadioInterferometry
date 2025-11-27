@@ -5,6 +5,7 @@ from numba import cuda
 
 from modules.coords import max_basline
 from modules.noise import add_gaussian_noise
+from modules.backend import get_backend
 
 def grid_visibilities(V=None, uvw_lambda=None, du=None, dv=None, Npix=None, grid_config=None, mode='cupy'):
     """
@@ -20,6 +21,9 @@ def grid_visibilities(V=None, uvw_lambda=None, du=None, dv=None, Npix=None, grid
     if V is None or uvw_lambda is None or du is None or dv is None:
         raise ValueError("Faltan parámetros obligatorios (V, uvw, du, dv). "
                          "Deben pasarse como argumentos o dentro de grid_config.")
+
+    mode = get_backend(mode)
+    print(f'Backend a utilizar: {mode}')
 
     if mode == 'numba':
         vg, wg = grid_visibilities_cuda(V, uvw_lambda, du, dv, Npix=Npix)

@@ -1,4 +1,7 @@
 import cupy as cp
+import numpy as np
+from modules.interferometry import adjoint_op, forward_op
+from modules.backend import get_backend
 
 '''
 Regularizations
@@ -54,7 +57,21 @@ def entropy(image, epsilon):
 Objective function
 '''
 
-from modules.interferometry import adjoint_op, forward_op
+def obj_function(image, V_obs, weights):
 
-def obj_function(image, V, W, reg_lambda, ref_func):
-    pass
+    backend = get_backend('cupy')
+    if backend == 'cupy':
+        sys = cp
+    else:
+        sys = np
+
+    V_pred = forward_op(image)
+    residual = V_pred - V_obs
+
+    # cost
+    f_cost = 0.5 * sys.sum(weights * sys.abs(residual)**2)
+
+    # gradient
+    grad = adjoint_op(weights * residual)
+
+    return f_cost, grad
