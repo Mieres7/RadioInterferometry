@@ -3,7 +3,10 @@ Cálculos de visibilidades, frecuencias y grillas
 """
 
 import numpy as np
+import cupy as cp
+from cupyx.scipy.signal import fftconvolve
 from modules.gridder import grid_visibilities
+
 
 def uvw_to_lambda(uvw, freq_hz):
     c = 299792458.0
@@ -79,21 +82,6 @@ def to_fourier(image):
     ifsh  = xp.fft.ifftshift
 
     return fftsh(fft2(ifsh(image)))
-def forward_op(data=None, gridded=False, grid_func='numpy', Image=None):
-    
-    if data is not None:
-        V = data['V']
-        uvw = data.get('uvw', None)
-        du = data.get('du',None)
-        dv = data.get('dv', None)
-        Npix = data.get('N', None)
-
-    if not gridded:
-        VG, _ = grid_visibilities(V, uvw, du, dv, Npix=Npix, mode=grid_func)
-        return to_fourier(VG)
-    else:
-        # this is with no grid, check!
-        return to_fourier(Image)
 
 def forward_op(data=None, gridded=False, grid_func='numpy', Image=None):
     """
@@ -107,7 +95,6 @@ def forward_op(data=None, gridded=False, grid_func='numpy', Image=None):
         
         return V_pred
 
-    # CASO 2: Estamos procesando datos crudos (Input es 'data')
     if data is not None:
         V = data['V']
         uvw = data.get('uvw', None)
@@ -126,9 +113,6 @@ def forward_op(data=None, gridded=False, grid_func='numpy', Image=None):
 def adjoint_op(visibilities):
     return to_image(visibilities)
 
-    
-import cupy as cp
-from cupyx.scipy.signal import fftconvolve
 
 def get_clean_beam(N, pixel_size, uvw_lambda):
     """
@@ -170,3 +154,17 @@ def restore_image(I_model, V_obs, weights, uvw_lambda, pixel_size, forward_op, a
     I_restored = I_convolved + dirty_residuals
     
     return I_restored, dirty_residuals, beam
+
+def get_dirty_image(gridded_visibilities):
+    xp = cp.get_array_module(gridded_visibilities)
+
+    # Transformada inversa: ifftshift → ifft2 → fftshift
+    image_complex = to_image(gridded_visibilities)
+
+    # Pasar siempre a NumPy antes de graficar
+    if xp is cp:
+        dirty_image = image_complex.real
+    else:
+        dirty_image = cp.asnumpy(image_complex.real)
+
+    return dirty_image

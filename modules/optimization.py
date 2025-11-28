@@ -41,7 +41,10 @@ def tsv(image):
     
     return cost, grad
     
-def entropy(image, epsilon):
+def entropy(image):
+
+    epsilon = 1
+
     log_term = cp.log(image + epsilon)
     
     # Cost function

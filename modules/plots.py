@@ -6,9 +6,11 @@ import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
 import math
+from typing import List, Tuple, Any, Dict, Optional
 
-from .interferometry import uvw_to_lambda, to_fourier, to_image
+from .interferometry import uvw_to_lambda, get_dirty_image
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 def plot_uv_coverage(
     uvw,
@@ -150,17 +152,7 @@ def plot_dirty_image(VG, pixel_size_arcsec=None, title="Dirty Image"):
     Calcula y grafica la Dirty Image a partir de la grilla de visibilidades.
     Funciona tanto con arrays de NumPy como de CuPy.
     """
-    # Detectar si el array es CuPy o NumPy
-    xp = cp.get_array_module(VG)
-
-    # Transformada inversa: ifftshift → ifft2 → fftshift
-    image_complex = to_image(VG)
-
-    # Pasar siempre a NumPy antes de graficar
-    if xp is cp:
-        image_real = cp.asnumpy(image_complex.real)
-    else:
-        image_real = image_complex.real
+    image_real = get_dirty_image(VG)
 
     # Graficar
     plt.figure(figsize=(8, 8))
@@ -214,7 +206,7 @@ def plot_psf(WG, pixel_size_arcsec=None, log_scale=False, title="PSF (Dirty Beam
         extent = [-fov, fov, -fov, fov]
         xlabel = "Arcsec"
 
-    # Configuración de escala
+    # Configuración de scale
     norm = None
     if log_scale:
         from matplotlib.colors import LogNorm
@@ -293,4 +285,96 @@ def plot_speedups(df):
     plt.grid(True)
     plt.legend()
     plt.title("Comparación de Speedups")
+    plt.show()
+
+
+def plot(
+    data: List[Dict[str, Any]], 
+    grid_config: Tuple[int, int],
+    scale: Optional[float] = None,
+    fig_title: Optional[str] = None
+):
+    """
+    Plots a grid of images based on a list of dictionaries.
+    
+    Args:
+        data: List of dicts containing 'image', 'title', 'xlabel', 'ylabel', 'cmap'.
+        grid_config: Tuple (rows, cols).
+        scale: Multiplier for figure size. Calculated automatically if None.
+    """
+    rows, cols = grid_config
+    total_subplots = rows * cols
+    N = len(data)
+
+    # Dynamic scaling logic
+    if scale is None:
+        if total_subplots == 1:
+            scale = 8.0
+        elif total_subplots <= 4:
+            scale = 6.0
+        elif total_subplots <= 12:
+            scale = 4.0
+        elif total_subplots <= 30:
+            scale = 3.0
+        else:
+            scale = 2.0
+    
+    fig_width = scale * cols
+    fig_height = scale * rows
+    
+    print(f"Generating plot with scale: {scale} (Figure size: {fig_width:.1f}x{fig_height:.1f} inches)")
+
+    fig, axes = plt.subplots(rows, cols, figsize=(fig_width, fig_height))
+
+    if fig_title:
+        fig.suptitle(fig_title, fontsize=scale * 3.5, y=0.98 if rows > 1 else 1.05)
+
+    if rows * cols == 1:
+        axes_list = [axes]  
+    elif rows == 1 or cols == 1:
+        axes_list = axes.tolist() 
+    else:
+        axes_list = axes.flatten().tolist() 
+    
+    for i in range(min(N, total_subplots)):
+        ax = axes_list[i]
+        item = data[i]
+        
+        img_data = item.get('image')
+
+        if hasattr(img_data, 'get'):
+            img_data = img_data.get()
+        elif hasattr(img_data, 'cpu'):
+            img_data = img_data.cpu().numpy()
+
+        title = item.get('title', '')
+        xlabel = item.get('xlabel', '')
+        ylabel = item.get('ylabel', '')
+        cmap   = item.get('cmap', None)
+        
+        im = ax.imshow(img_data, cmap=cmap, origin='lower')
+        
+        # Adjust font size relative to scale
+        font_scale = max(8, scale * 2.5) 
+        ax.set_title(title, fontsize=font_scale)
+        
+        if xlabel: ax.set_xlabel(xlabel, fontsize=font_scale * 0.8)
+        if ylabel: ax.set_ylabel(ylabel, fontsize=font_scale * 0.8)
+        
+        # Colorbar handling
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        
+        if img_data.ndim == 2:
+            fig.colorbar(im, cax=cax)
+        else:
+            cax.axis('off') # Keep layout consistent for RGB images
+
+    # Hide empty subplots
+    for j in range(N, total_subplots):
+        if j < len(axes_list):
+            axes_list[j].axis('off')
+            
+    plt.title(fig_title)
+    plt.tight_layout()
     plt.show()
