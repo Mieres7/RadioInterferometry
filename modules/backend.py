@@ -25,7 +25,7 @@ def get_backend(requested_mode="auto"):
             # verifica que CUDA esté disponible y funcional
             if cuda.is_available():
                 # probar que *realmente* funciona
-                cuda.detect()
+                # cuda.detect()
                 return "numba"
             else:
                 raise RuntimeError("Numba CUDA no disponible")

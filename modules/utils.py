@@ -160,4 +160,51 @@ def benchmark_gridding(V, uvw, du, dv, grid_sizes=[256, 512, 1024, 2048]):
 
     return pd.DataFrame(results)
 
+def calculate_quality_metrics(I_restored, dirty_residuals):
+    """
+    Calcula MAD STD y PSNR según las ecuaciones 18 y 19 del laboratorio.
     
+    Parámetros:
+    -----------
+    I_restored : cupy.ndarray
+        La imagen final restaurada (I_model * beam + residuals).
+    dirty_residuals : cupy.ndarray
+        La imagen 'dirty' de los residuos (Adjoint(V_obs - V_pred)).
+        
+    Retorna:
+    --------
+    mad_std : float
+        Estimación robusta de la desviación estándar del ruido.
+    psnr : float
+        Peak Signal-to-Noise Ratio (lineal, según Eq. 19).
+    """
+    
+    # Asegurarnos de usar solo la parte real
+    # El ruido y la intensidad física son cantidades reales
+    I_restored_real = I_restored.real
+    residuals_real = dirty_residuals.real
+    
+    # --- 1. MAD STD (Ecuación 18) ---
+    # Calcular la mediana de los residuos
+    median_resid = cp.median(residuals_real)
+    
+    # Calcular la desviación absoluta respecto a la mediana
+    abs_deviation = cp.abs(residuals_real - median_resid)
+    
+    # Calcular la Mediana de la Desviación Absoluta (MAD)
+    mad = cp.median(abs_deviation)
+    
+    # Convertir a estimación de STD (Factor 1.4826 para distribución normal)
+    mad_std = 1.4826 * mad
+    
+    # --- 2. PSNR (Ecuación 19) ---
+    # El PDF define PSNR como la relación directa entre el Máximo y el Ruido
+    peak_signal = cp.max(I_restored_real)
+    
+    # Evitar división por cero
+    if mad_std == 0:
+        psnr = float('inf')
+    else:
+        psnr = peak_signal / mad_std
+        
+    return mad_std, psnr

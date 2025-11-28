@@ -26,6 +26,8 @@ def grid_visibilities(V=None, uvw_lambda=None, du=None, dv=None, Npix=None, grid
     print(f'Backend a utilizar: {mode}')
 
     if mode == 'numba':
+        V = cp.asarray(V)
+        uvw_lambda = cp.asarray(uvw_lambda)
         vg, wg = grid_visibilities_cuda(V, uvw_lambda, du, dv, Npix=Npix)
         return vg, wg
     elif mode == 'cupy':
@@ -118,78 +120,61 @@ def kernel_normalize(grid_real, grid_imag, grid_wgt):
 
 def grid_visibilities_cuda(V, uvw, du, dv, Npix=512):
     """
-    Realiza el gridding en GPU manejando la estructura exacta (903, 73, 4, 3).
-    
-    Args:
-        V: Visibilidades complejas de shape (..., N_pol) o similar.
-           Se espera que coincida con uvw en las primeras dimensiones.
-        uvw: Coordenadas de shape (..., 3). Ej: (903, 73, 4, 3).
-        du, dv: Tamaño de celda en el plano UV.
-        Npix: Tamaño de la imagen (N).
+    Igual que antes, pero ahora usa CuPy en vez de NumPy.
     """
-    # --- PASO 1: APLANAMIENTO DIRECTO ---
-    # Como uvw tiene coordenada para CADA visibilidad, aplanamos todo a 1D.
-    # Esto garantiza que el dato V[i,j,k] corresponda siempre a UVW[i,j,k].
-    
-    # V shape esperado: (903, 73, 4) -> Total: 263,676 muestras
-    # UVW shape esperado: (903, 73, 4, 3)
-    
-    # Forzamos flatten y tipos de datos compatibles con GPU (float32 es más rápido)
-    vis_real_flat = np.ascontiguousarray(V.real.reshape(-1).astype(np.float32))
-    vis_imag_flat = np.ascontiguousarray(V.imag.reshape(-1).astype(np.float32))
-    
-    # Extraemos U y V y los aplanamos igual que V
-    # uvw[..., 0] tiene shape (903, 73, 4) -> reshape(-1) -> (263676,)
-    u_flat = np.ascontiguousarray(uvw[..., 0].reshape(-1).astype(np.float32))
-    v_flat = np.ascontiguousarray(uvw[..., 1].reshape(-1).astype(np.float32))
-    
-    # Validacion de seguridad
-    assert vis_real_flat.size == u_flat.size, "Error: V y UVW no tienen la misma cantidad de elementos totales."
-    
-    # Pesos (1.0 por defecto)
-    weights_flat = np.ones(vis_real_flat.size, dtype=np.float32)
 
-    # --- PASO 2: TRANSFERENCIA A GPU ---
-    d_u = cuda.to_device(u_flat)
-    d_v = cuda.to_device(v_flat)
-    d_vis_r = cuda.to_device(vis_real_flat)
-    d_vis_i = cuda.to_device(vis_imag_flat)
-    d_wgt   = cuda.to_device(weights_flat)
-    
-    # Crear grillas vacías
-    d_grid_r = cuda.device_array((Npix, Npix), dtype=np.float32)
-    d_grid_i = cuda.device_array((Npix, Npix), dtype=np.float32)
-    d_grid_w = cuda.device_array((Npix, Npix), dtype=np.float32)
-    
-    # Inicializar en 0
-    d_grid_r[:] = 0
-    d_grid_i[:] = 0
-    d_grid_w[:] = 0
-    
-    # --- PASO 3: EJECUCIÓN DEL GRIDDING ---
+    # --- Flatten con CuPy ---
+    vis_real_flat = cp.ascontiguousarray(V.real.reshape(-1).astype(cp.float32))
+    vis_imag_flat = cp.ascontiguousarray(V.imag.reshape(-1).astype(cp.float32))
+
+    u_flat = cp.ascontiguousarray(uvw[..., 0].reshape(-1).astype(cp.float32))
+    v_flat = cp.ascontiguousarray(uvw[..., 1].reshape(-1).astype(cp.float32))
+
+    weights_flat = cp.ones(vis_real_flat.size, dtype=cp.float32)
+
+    # --- Convertir CuPy -> Numba (sin copia) ---
+    d_u     = cuda.as_cuda_array(u_flat)
+    d_v     = cuda.as_cuda_array(v_flat)
+    d_vis_r = cuda.as_cuda_array(vis_real_flat)
+    d_vis_i = cuda.as_cuda_array(vis_imag_flat)
+    d_wgt   = cuda.as_cuda_array(weights_flat)
+
+    # --- Crear grillas en CuPy ---
+    grid_r = cp.zeros((Npix, Npix), dtype=cp.float32)
+    grid_i = cp.zeros((Npix, Npix), dtype=cp.float32)
+    grid_w = cp.zeros((Npix, Npix), dtype=cp.float32)
+
+    # Convertirlas a Numba
+    d_grid_r = cuda.as_cuda_array(grid_r)
+    d_grid_i = cuda.as_cuda_array(grid_i)
+    d_grid_w = cuda.as_cuda_array(grid_w)
+
+    # --- Ejecutar kernels ---
     threads = 256
     blocks = (vis_real_flat.size + threads - 1) // threads
-    
+
     kernel_gridding_flat[blocks, threads](
         d_u, d_v, d_vis_r, d_vis_i, d_wgt,
         d_grid_r, d_grid_i, d_grid_w,
         float(du), float(dv), int(Npix)
     )
     cuda.synchronize()
-    
-    # --- PASO 4: NORMALIZACIÓN ---
+
+    # Normalización
     t2d = (16, 16)
     b_x = (Npix + t2d[0] - 1) // t2d[0]
     b_y = (Npix + t2d[1] - 1) // t2d[1]
-    
+
     kernel_normalize[(b_x, b_y), t2d](d_grid_r, d_grid_i, d_grid_w)
     cuda.synchronize()
-    
-    # --- PASO 5: RETORNO ---
-    VG = d_grid_r.copy_to_host() + 1j * d_grid_i.copy_to_host()
-    WG = d_grid_w.copy_to_host()
-    
+
+    # --- Retornar como CuPy ---
+    VG = grid_r + 1j * grid_i
+    WG = grid_w
+
     return VG, WG
+
+
 
 def get_grid_config(V, uvw_lambda, N, baselines, oversampling_factor, frequencies, add_noise=False):
     # Max distance between baselines
@@ -215,7 +200,8 @@ def get_grid_config(V, uvw_lambda, N, baselines, oversampling_factor, frequencie
         'frequencies': frequencies,
         'oversampling_factor': oversampling_factor,
         'baselines': baselines,
-        'Npix': N
+        'Npix': N,
+        'pixel_size_image': dx
     }
 
     return grid_config

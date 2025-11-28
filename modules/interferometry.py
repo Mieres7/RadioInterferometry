@@ -3,7 +3,6 @@ Cálculos de visibilidades, frecuencias y grillas
 """
 
 import numpy as np
-from cupy.fft import fftshift, ifftshift, ifft2, fft2
 from modules.gridder import grid_visibilities
 
 def uvw_to_lambda(uvw, freq_hz):
@@ -60,11 +59,26 @@ def generate_random_sources(ra0_deg, dec0_deg, N=50, max_offset_deg=1.0, flux_ra
 
 
 def to_image(visibilities):
-    return fftshift(ifft2(ifftshift(visibilities)))
+    """IFFT2 universal para NumPy y CuPy"""
+
+    xp = cp.get_array_module(visibilities)
+
+    fft2  = xp.fft.ifft2
+    fftsh = xp.fft.fftshift
+    ifsh  = xp.fft.ifftshift
+
+    return fftsh(fft2(ifsh(visibilities)))
 
 def to_fourier(image):
-    return fftshift(fft2(ifftshift(image)))
+    """FFT2 universal para NumPy y CuPy"""
 
+    xp = cp.get_array_module(image)
+
+    fft2  = xp.fft.fft2
+    fftsh = xp.fft.fftshift
+    ifsh  = xp.fft.ifftshift
+
+    return fftsh(fft2(ifsh(image)))
 def forward_op(data=None, gridded=False, grid_func='numpy', Image=None):
     
     if data is not None:
@@ -81,8 +95,78 @@ def forward_op(data=None, gridded=False, grid_func='numpy', Image=None):
         # this is with no grid, check!
         return to_fourier(Image)
 
+def forward_op(data=None, gridded=False, grid_func='numpy', Image=None):
+    """
+    Operador Directo:
+    1. Si recibe 'Image': Transforma de Imagen -> Visibilidades Grideadas (FFT). 
+    2. Si recibe 'data': Gridea visibilidades crudas -> Visibilidades Grideadas.
+    """
+
+    if Image is not None:
+        V_pred = to_fourier(Image)
+        
+        return V_pred
+
+    # CASO 2: Estamos procesando datos crudos (Input es 'data')
+    if data is not None:
+        V = data['V']
+        uvw = data.get('uvw', None)
+        du = data.get('du',None)
+        dv = data.get('dv', None)
+        Npix = data.get('N', None)
+        
+        if not gridded:
+            VG, _ = grid_visibilities(V, uvw, du, dv, Npix=Npix, mode=grid_func)
+            return VG 
+        else:
+            return V 
+
+    raise ValueError("Debes entregar 'data' (para gridding) o 'Image' (para simulación).")
+
 def adjoint_op(visibilities):
     return to_image(visibilities)
 
     
+import cupy as cp
+from cupyx.scipy.signal import fftconvolve
 
+def get_clean_beam(N, pixel_size, uvw_lambda):
+    """
+    Calculates Gaussian clean beam
+    """
+    # 1. B_max
+    B_max_l = cp.max(cp.abs(uvw_lambda[..., 0]))
+    B_max_m = cp.max(cp.abs(uvw_lambda[..., 1]))
+    
+    sigma_l = 1.0 / (2 * cp.pi * B_max_l)
+    sigma_m = 1.0 / (2 * cp.pi * B_max_m)
+    
+    # 2. l, m grid
+    coords = cp.linspace(-N/2, N/2 - 1, N) * pixel_size
+    l_grid, m_grid = cp.meshgrid(coords, coords)
+    
+    # 3. Clean beam
+    exponent = -0.5 * ((l_grid**2 / sigma_l**2) + (m_grid**2 / sigma_m**2))
+    clean_beam = cp.exp(exponent)
+    
+    return clean_beam / cp.max(clean_beam)
+
+def restore_image(I_model, V_obs, weights, uvw_lambda, pixel_size, forward_op, adjoint_op):
+    """
+    Genera la imagen restaurada final convolucionando el modelo y sumando residuos.
+    """
+    N = I_model.shape[0]
+    
+    beam = get_clean_beam(N, pixel_size, uvw_lambda)
+    
+    I_convolved = fftconvolve(I_model, beam, mode='same')
+    
+    V_pred = forward_op(Image=I_model)
+    V_resid = V_obs - V_pred
+    
+    dirty_residuals = adjoint_op(weights * V_resid)
+    dirty_residuals = dirty_residuals.real
+    
+    I_restored = I_convolved + dirty_residuals
+    
+    return I_restored, dirty_residuals, beam

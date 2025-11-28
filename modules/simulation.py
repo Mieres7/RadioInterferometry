@@ -71,4 +71,3 @@ def visibilities_simulation(config, get_grid_config=False):
 
     return V, uvw, uvw_lambda, frequencies, baselines_enu
 
-

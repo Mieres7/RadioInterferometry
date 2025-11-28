@@ -148,38 +148,43 @@ def plot_antennas(enu_coords, labels=True, title="Configuración de Antenas", un
 def plot_dirty_image(VG, pixel_size_arcsec=None, title="Dirty Image"):
     """
     Calcula y grafica la Dirty Image a partir de la grilla de visibilidades.
+    Funciona tanto con arrays de NumPy como de CuPy.
     """
-    # 1. Detectar backend (GPU/CPU)
+    # Detectar si el array es CuPy o NumPy
     xp = cp.get_array_module(VG)
-    
-    # 2. Transformada Inversa (IFFT)
-    # Secuencia: ifftshift -> ifft2 -> fftshift para centrar la imagen
+
+    # Transformada inversa: ifftshift → ifft2 → fftshift
     image_complex = to_image(VG)
 
-    # 3. Extraer parte Real y mover a CPU para graficar
-    if xp == cp:
+    # Pasar siempre a NumPy antes de graficar
+    if xp is cp:
         image_real = cp.asnumpy(image_complex.real)
     else:
         image_real = image_complex.real
 
-    # 4. Graficar
+    # Graficar
     plt.figure(figsize=(8, 8))
-    
+
     extent = None
     xlabel = "Pixeles"
-    if pixel_size_arcsec:
+
+    if pixel_size_arcsec is not None:
         N = VG.shape[0]
         fov = (N * pixel_size_arcsec) / 2
         extent = [-fov, fov, -fov, fov]
         xlabel = "Arcsec"
 
-    plt.imshow(image_real, origin='lower', cmap='inferno', extent=extent)
+    plt.imshow(image_real, 
+               origin='lower',
+               cmap='inferno',
+               extent=extent)
+
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(xlabel)
     plt.colorbar(label="Intensidad (Jy/beam)")
     plt.show()
-    
+
     return image_real
 
 def plot_psf(WG, pixel_size_arcsec=None, log_scale=False, title="PSF (Dirty Beam)"):
