@@ -78,7 +78,8 @@ def obj_function(image, V_obs, weights, reg_lambda, reg_func):
     total_cost = f_cost + reg_lambda * reg_cost
     total_grad = grad + reg_lambda * reg_grad
 
-    return total_cost, total_grad
+    return total_cost.real, total_grad
+    
 
 '''
 Line Search
@@ -107,6 +108,8 @@ def armijo_line_search(image, direction, grad, current_cost, V_obs, weights, reg
         if alpha < 1e-10: 
             return 1e-10
 
+    
+
 '''
 LBFGS algorithm
 '''
@@ -129,7 +132,8 @@ def lbfgs_optimize(image_init, V_obs, weights, reg_lambda, reg_func,
     print(f"Iter 0 | Cost: {cost:.6e}")
     
     for k in range(max_iter):
-        
+    
+
         # --- LBFGS Two-Loop Recursion ---
         q = grad.copy() # q comienza siendo el gradiente actual
         
@@ -160,13 +164,12 @@ def lbfgs_optimize(image_init, V_obs, weights, reg_lambda, reg_func,
             r = q
             
         # LOOP 2 (Hacia adelante)
-        # Nota: alphas se llenó en orden inverso, así que iteramos forward normal
-        # pero accediendo a alphas desde el final hacia el principio.
+        # Nota: alphas se llenó en orden inverso, así que iteramos hacia adelante
         for i in range(limit):
             s = s_history[i]
             y = y_history[i]
             rho = rho_history[i]
-            alpha_i = alphas[limit - 1 - i] # Recuperar en orden correcto
+            alpha_i = alphas[limit - 1 - i]  # Recuperar en orden correcto (alphas está invertido)
             
             beta = rho * cp.sum(y * r)
             r += s * (alpha_i - beta)
@@ -179,6 +182,10 @@ def lbfgs_optimize(image_init, V_obs, weights, reg_lambda, reg_func,
         step_size = armijo_line_search(x, direction, grad, cost, 
                                        V_obs, weights, reg_lambda, reg_func)
         
+
+        # g_norm = cp.linalg.norm(grad)
+        # print(f"Iter {k+1} | Cost: {cost:.6e} | Grad Norm: {g_norm:.6e} | Step: {step_size:.4e}")
+
         # --- Actualización ---
         x_new = x + step_size * direction
         

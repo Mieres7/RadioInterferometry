@@ -155,11 +155,11 @@ def restore_image(I_model, V_obs, weights, uvw_lambda, pixel_size, forward_op, a
     
     return I_restored, dirty_residuals, beam
 
-def get_dirty_image(gridded_visibilities):
+def get_dirty_image(gridded_visibilities, gridded_weights):
     xp = cp.get_array_module(gridded_visibilities)
 
     # Transformada inversa: ifftshift → ifft2 → fftshift
-    image_complex = to_image(gridded_visibilities)
+    image_complex = to_image(gridded_visibilities * gridded_weights)
 
     # Pasar siempre a NumPy antes de graficar
     if xp is cp:

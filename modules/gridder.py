@@ -73,8 +73,6 @@ def grid_visibilities(V=None, uvw_lambda=None, du=None, dv=None, Npix=None, grid
     valid_cells = WG > 0
     VG[valid_cells] /= WG[valid_cells]
 
-    WG = WG / cp.sum(WG)
-
     return VG, WG
 
 
@@ -173,8 +171,6 @@ def grid_visibilities_cuda(V, uvw, du, dv, Npix=512):
     # --- Retornar como CuPy ---
     VG = grid_r + 1j * grid_i
     WG = grid_w
-
-    WG = WG / cp.sum(WG)
 
     return VG, WG
 

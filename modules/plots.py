@@ -375,6 +375,6 @@ def plot(
         if j < len(axes_list):
             axes_list[j].axis('off')
             
-    plt.title(fig_title)
+    # plt.title(fig_title)
     plt.tight_layout()
     plt.show()
