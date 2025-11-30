@@ -72,6 +72,7 @@ def obj_function(image, V_obs, weights, reg_lambda, reg_func):
     f_cost = 0.5 * sys.sum(weights * sys.abs(residual)**2)
     # gradient
     grad = adjoint_op(weights * residual)
+    grad = grad.real
 
     reg_cost, reg_grad = reg_func(image)
 
@@ -224,3 +225,5 @@ def lbfgs_optimize(image_init, V_obs, weights, reg_lambda, reg_func,
             break
             
     return x
+
+
