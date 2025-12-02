@@ -7,6 +7,7 @@ import cupy as cp
 from cupyx.scipy.signal import fftconvolve
 from modules.gridder import grid_visibilities
 
+sys=cp
 
 def uvw_to_lambda(uvw, freq_hz):
     c = 299792458.0
@@ -70,7 +71,7 @@ def to_image(visibilities):
     fftsh = xp.fft.fftshift
     ifsh  = xp.fft.ifftshift
 
-    return fftsh(fft2(ifsh(visibilities)))
+    return fftsh(fft2(ifsh(visibilities))).real
 
 def to_fourier(image):
     """FFT2 universal para NumPy y CuPy"""
@@ -119,21 +120,21 @@ def get_clean_beam(N, pixel_size, uvw_lambda):
     Calculates Gaussian clean beam
     """
     # 1. B_max
-    B_max_l = cp.max(cp.abs(uvw_lambda[..., 0]))
-    B_max_m = cp.max(cp.abs(uvw_lambda[..., 1]))
+    B_max_l = sys.max(sys.abs(uvw_lambda[..., 0]))
+    B_max_m = sys.max(sys.abs(uvw_lambda[..., 1]))
     
-    sigma_l = 1.0 / (2 * cp.pi * B_max_l)
-    sigma_m = 1.0 / (2 * cp.pi * B_max_m)
+    sigma_l = 1.0 / (2 * sys.pi * B_max_l)
+    sigma_m = 1.0 / (2 * sys.pi * B_max_m)
     
     # 2. l, m grid
-    coords = cp.linspace(-N/2, N/2 - 1, N) * pixel_size
-    l_grid, m_grid = cp.meshgrid(coords, coords)
+    coords = sys.linspace(-N/2, N/2 - 1, N) * pixel_size
+    l_grid, m_grid = sys.meshgrid(coords, coords)
     
     # 3. Clean beam
     exponent = -0.5 * ((l_grid**2 / sigma_l**2) + (m_grid**2 / sigma_m**2))
-    clean_beam = cp.exp(exponent)
+    clean_beam = sys.exp(exponent)
     
-    return clean_beam / cp.max(clean_beam)
+    return clean_beam / sys.max(clean_beam)
 
 def restore_image(I_model, V_obs, weights, uvw_lambda, pixel_size, forward_op, adjoint_op):
     """

@@ -1,7 +1,7 @@
-import numpy as np
-import math
-import cupy as cp
 from numba import cuda
+import numpy as np
+import cupy as cp
+import math
 
 from modules.coords import max_basline
 from modules.noise import add_gaussian_noise

@@ -17,7 +17,7 @@ def get_backend(requested_mode="auto"):
             _ = cp.array([1])  # fuerza a inicializar CUDA
             return "cupy"
         except Exception as e:
-            print(f"[WARN] Cupy solicitado pero no disponible: {e}")
+            #print(f"[WARN] Cupy solicitado pero no disponible: {e}")
             return "numpy"
 
     if requested_mode == "numba":

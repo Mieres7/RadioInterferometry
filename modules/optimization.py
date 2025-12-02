@@ -6,15 +6,18 @@ from modules.backend import get_backend
 import time
 import numpy as np
 
-try:
-    import cupy as cp
-    xp = cp
-    USING_CUPY = True
-except:
-    xp = np
-    USING_CUPY = False
+# try:
+#     import cupy as cp
+#     xp = cp
+#     USING_CUPY = True
+# except:
+#     xp = np
+#     USING_CUPY = False
 
-Array = xp.ndarray
+USING_CUPY = False
+sys = np
+
+#Array = np.ndarray
 
 '''
 Regularizations
@@ -24,9 +27,9 @@ def l1(image):
     L1 Regularization
     '''
     # Cost Function
-    cost = cp.sum(cp.abs(image)) 
+    cost = sys.sum(sys.abs(image)) 
     # Gradient
-    grad = cp.sign(image) 
+    grad = sys.sign(image) 
 
     return cost.real, grad.real
     
@@ -36,17 +39,17 @@ def tsv(image):
     Total Squared Variation Regularization
     '''
     # Cost Functions
-    diff_x = cp.roll(image, -1, axis=1) - image 
-    diff_y = cp.roll(image, -1, axis=0) - image 
+    diff_x = sys.roll(image, -1, axis=1) - image 
+    diff_y = sys.roll(image, -1, axis=0) - image 
     
-    cost = cp.sum(diff_x**2 + diff_y**2)
+    cost = sys.sum(diff_x**2 + diff_y**2)
     
     # Gradient
-    im1_x = cp.roll(image, 1, axis=1)
-    im1_y = cp.roll(image, 1, axis=0)
+    im1_x = sys.roll(image, 1, axis=1)
+    im1_y = sys.roll(image, 1, axis=0)
     
-    ip1_x = cp.roll(image, -1, axis=1)
-    ip1_y = cp.roll(image, -1, axis=0)
+    ip1_x = sys.roll(image, -1, axis=1)
+    ip1_y = sys.roll(image, -1, axis=0)
     
     lap_x = (ip1_x - image) - (image - im1_x)
     lap_y = (ip1_y - image) - (image - im1_y)
@@ -57,12 +60,12 @@ def tsv(image):
     
 def entropy(image):
 
-    epsilon = 1
+    epsilon = 1e-12
 
-    log_term = cp.log(image + epsilon)
+    log_term = sys.log(image + epsilon)
     
     # Cost function
-    cost = cp.sum(image * log_term - image)
+    cost = sys.sum(image * log_term - image)
     # Gradient
     grad = log_term
     
@@ -131,10 +134,10 @@ def _as_xp(arr):
         return cp.asarray(arr)
     return arr
 def _norm(x):
-    return float(xp.linalg.norm(x.ravel()))
+    return float(sys.linalg.norm(x.ravel()))
 
 def _dot(a, b):
-    return float(xp.vdot(a.ravel(), b.ravel()))
+    return float(sys.vdot(a.ravel(), b.ravel()))
 
 
 '''
@@ -202,7 +205,7 @@ def lbfgs_optimize(
     ftol=1e-12,
     verbose=True
 ):
-    global xp, USING_CUPY
+    global sys, USING_CUPY
 
     x = _as_xp(x0)
 
