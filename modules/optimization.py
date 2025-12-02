@@ -3,6 +3,19 @@ import numpy as np
 from modules.interferometry import adjoint_op, forward_op
 from modules.backend import get_backend
 
+import time
+import numpy as np
+
+try:
+    import cupy as cp
+    xp = cp
+    USING_CUPY = True
+except:
+    xp = np
+    USING_CUPY = False
+
+Array = xp.ndarray
+
 '''
 Regularizations
 '''
@@ -15,7 +28,8 @@ def l1(image):
     # Gradient
     grad = cp.sign(image) 
 
-    return cost, grad
+    return cost.real, grad.real
+    
 
 def tsv(image):
     '''
@@ -39,7 +53,7 @@ def tsv(image):
     
     grad = -2.0 * (lap_x + lap_y)
     
-    return cost, grad
+    return cost.real, grad.real
     
 def entropy(image):
 
@@ -52,7 +66,7 @@ def entropy(image):
     # Gradient
     grad = log_term
     
-    return cost, grad
+    return cost.real, grad.real
 
 '''
 Objective function
@@ -81,149 +95,195 @@ def obj_function(image, V_obs, weights, reg_lambda, reg_func):
 
     return total_cost.real, total_grad
     
+# -------------------------------------
+# LBFGS Memory
+# -------------------------------------
+class LBFGSState:
+    def __init__(self, m: int):
+        self.m = m
+        self.s_list = []
+        self.y_list = []
+        self.rho_list = []
+
+    def add_pair(self, s, y, min_sy=1e-12):
+        sy = _dot(s, y)
+        if sy <= min_sy:
+            return False
+        
+        rho = 1.0 / sy
+
+        if len(self.s_list) == self.m:
+            self.s_list.pop(0)
+            self.y_list.pop(0)
+            self.rho_list.pop(0)
+
+        self.s_list.append(s)
+        self.y_list.append(y)
+        self.rho_list.append(rho)
+        return True
+
+
+# -------------------------------------
+# Helpers
+# -------------------------------------
+def _as_xp(arr):
+    if USING_CUPY and isinstance(arr, np.ndarray):
+        return cp.asarray(arr)
+    return arr
+def _norm(x):
+    return float(xp.linalg.norm(x.ravel()))
+
+def _dot(a, b):
+    return float(xp.vdot(a.ravel(), b.ravel()))
+
 
 '''
 Line Search
 '''
-def armijo_line_search(image, direction, grad, current_cost, V_obs, weights, reg_lambda, reg_func,
-                       alpha=1.0, rho=0.5, c1=1e-4):
+def armijo_line_search(image, direction, grad, current_cost, 
+                       args, alpha0=1.0, rho=0.5, c1=1e-4,
+                       alpha_min=1e-12, max_iter=50):
     
-    grad_dot_dir = cp.sum(grad * direction)
-    
-    if grad_dot_dir > 0:
-        return 1e-5
+    g_dot_d = _dot(grad, direction)
+    if g_dot_d >= 0:
+        return 0.0, current_cost, "non_descent"
 
-    while True:
-        # 1. Try new image
-        image_new = image + alpha * direction
-        
-        # 2. Obtain new cost
-        cost_new, _ = obj_function(image_new, V_obs, weights, reg_lambda, reg_func)
-        
-        # 3. Armijo's condition
-        if cost_new <= current_cost + c1 * alpha * grad_dot_dir:
-            return alpha
-            
+    alpha = alpha0
+
+    for _ in range(max_iter):
+        new_img = image + alpha * direction
+        cost_new, _ = obj_function(new_img, *args)
+
+        if cost_new <= current_cost + c1 * alpha * g_dot_d:
+            return float(alpha), float(cost_new), "ok"
+
         alpha *= rho
-        
-        if alpha < 1e-10: 
-            return 1e-10
+        if alpha < alpha_min:
+            break
 
+    return float(alpha), float(cost_new), "min_alpha"
+
+def lbfgs_two_loop(grad, state, eps=1e-16):
+    if len(state.s_list) == 0:
+        return -grad
+
+    q = grad.copy()
+    alpha = []
+
+    # backward loop
+    for s, y, rho in zip(reversed(state.s_list), reversed(state.y_list), reversed(state.rho_list)):
+        a = rho * _dot(s, q)
+        alpha.append(a)
+        q = q - a * y
+
+    # scaling
+    s_last = state.s_list[-1]
+    y_last = state.y_list[-1]
+    gamma = _dot(s_last, y_last) / (_dot(y_last, y_last) + eps)
+    r = gamma * q
+
+    # forward loop
+    for s, y, rho, a in zip(state.s_list, state.y_list, state.rho_list, reversed(alpha)):
+        beta = rho * _dot(y, r)
+        r = r + s * (a - beta)
+
+    return -r
     
 
 '''
 LBFGS algorithm
 '''
-def lbfgs_optimize(image_init, V_obs, weights, reg_lambda, reg_func, 
-                   max_iter=100, m=10, tol=1e-5):
-    """
-    Algoritmo LBFGS principal.
-    m: memoria (número de pasos pasados a guardar) 
-    """
-    x = image_init.copy()
-    
-    # Historial para LBFGS (listas de cupy arrays)
-    s_history = [] # s_k = x_{k+1} - x_k
-    y_history = [] # y_k = g_{k+1} - g_k
-    rho_history = []
-    
-    # 1. Evaluación inicial
-    cost, grad = obj_function(x, V_obs, weights, reg_lambda, reg_func)
-    
-    print(f"Iter 0 | Cost: {cost:.6e}")
-    
-    for k in range(max_iter):
-    
+def lbfgs_optimize(
+    x0,
+    args,
+    m=10,
+    max_iter=100,
+    gtol=1e-6,
+    ftol=1e-12,
+    verbose=True
+):
+    global xp, USING_CUPY
 
-        # --- LBFGS Two-Loop Recursion ---
-        q = grad.copy() # q comienza siendo el gradiente actual
-        
-        # El algoritmo trabaja mejor con vectores planos para los productos punto
-        # pero las operaciones elemento a elemento funcionan igual en 2D.
-        
-        alphas = []
-        
-        # LOOP 1 (Hacia atrás)
-        limit = len(s_history)
-        for i in range(limit - 1, -1, -1):
-            s = s_history[i]
-            y = y_history[i]
-            rho = rho_history[i]
-            
-            alpha_i = rho * cp.sum(s * q)
-            alphas.append(alpha_i)
-            
-            q -= alpha_i * y
-            
-        # Escalado inicial de H_0 (importante para convergencia)
-        if limit > 0:
-            s_last = s_history[-1]
-            y_last = y_history[-1]
-            gamma = cp.sum(s_last * y_last) / cp.sum(y_last * y_last)
-            r = gamma * q
-        else:
-            r = q
-            
-        # LOOP 2 (Hacia adelante)
-        # Nota: alphas se llenó en orden inverso, así que iteramos hacia adelante
-        for i in range(limit):
-            s = s_history[i]
-            y = y_history[i]
-            rho = rho_history[i]
-            alpha_i = alphas[limit - 1 - i]  # Recuperar en orden correcto (alphas está invertido)
-            
-            beta = rho * cp.sum(y * r)
-            r += s * (alpha_i - beta)
-            
-        # La dirección de descenso es el negativo de la aproximación H*g
-        direction = -r
-        
-        # --- Line Search ---
-        # Usamos backtracking para encontrar el tamaño de paso
-        step_size = armijo_line_search(x, direction, grad, cost, 
-                                       V_obs, weights, reg_lambda, reg_func)
-        
+    x = _as_xp(x0)
 
-        # g_norm = cp.linalg.norm(grad)
-        # print(f"Iter {k+1} | Cost: {cost:.6e} | Grad Norm: {g_norm:.6e} | Step: {step_size:.4e}")
+    state = LBFGSState(m=m)
 
-        # --- Actualización ---
-        x_new = x + step_size * direction
-        
-        # Calcular nuevo costo y gradiente
-        cost_new, grad_new = obj_function(x_new, V_obs, weights, reg_lambda, reg_func)
-        
-        # --- Guardar en memoria (s y y) ---
-        s_k = x_new - x
-        y_k = grad_new - grad
-        
-        # Cálculo de rho para el siguiente paso (rho = 1 / y^T s)
-        sy_dot = cp.sum(y_k * s_k)
-        
-        # Verificación de seguridad (curvatura)
-        if sy_dot > 1e-10:
-            if len(s_history) >= m:
-                s_history.pop(0)
-                y_history.pop(0)
-                rho_history.pop(0)
-            
-            s_history.append(s_k)
-            y_history.append(y_k)
-            rho_history.append(1.0 / sy_dot)
-            
-        # Actualizar variables para siguiente iter
-        x = x_new
-        grad = grad_new
-        cost = cost_new
-        
-        # Reporte y Convergencia
-        if k % 10 == 0:
-            print(f"Iter {k+1} | Cost: {cost:.6e} | Step: {step_size:.4e}")
-            
-        if cp.linalg.norm(grad) < tol:
-            print("Convergencia alcanzada.")
+    cost, grad = obj_function(x, *args)
+    cost = float(cost)
+    grad = _as_xp(grad)
+
+    cost_history = [cost]
+    t_start = time.time()
+
+    if verbose:
+        print(f"[LBFGS] it=0 cost={cost:.6e} ||g||={_norm(grad):.3e}")
+
+    # -----------------------
+    # MAIN LOOP
+    # -----------------------
+    for k in range(1, max_iter+1):
+
+        gnorm = _norm(grad)
+        if gnorm <= gtol:
+            if verbose:
+                print(f"[LBFGS] Converged (grad) at iter {k}")
             break
-            
-    return x
+
+        direction = lbfgs_two_loop(grad, state)
+
+        # direction must be descent
+        if _dot(grad, direction) >= 0:
+            direction = -grad
+
+        # line search
+        alpha, cost_new, status = armijo_line_search(
+            x, direction, grad, cost, args
+        )
+
+        # fallback if needed
+        if status in ["non_descent", "min_alpha"]:
+            direction = -grad
+            alpha = 1e-3
+            x_next = x + alpha * direction
+            cost_new, grad_new = obj_function(x_next, *args)
+        else:
+            x_next = x + alpha * direction
+            cost_new, grad_new = obj_function(x_next, *args)
+
+        cost_new = float(cost_new)
+        grad_new = _as_xp(grad_new)
+
+        # update memory
+        s = x_next - x
+        y = grad_new - grad
+        state.add_pair(s, y)
+
+        # update step
+        x = x_next
+        cost_prev = cost
+        cost = cost_new
+        grad = grad_new
+        cost_history.append(cost)
+
+        if verbose:
+            print(f"[LBFGS] it={k} cost={cost:.6e} ||g||={_norm(grad):.3e} alpha={alpha:.2e}")
+
+        # stopping by function decrease
+        denom = abs(cost) + abs(cost_prev) + 1e-16
+        rel_change = 2 * abs(cost - cost_prev) / denom
+        if rel_change <= ftol:
+            if verbose:
+                print(f"[LBFGS] Converged (Δf small) at iter {k}")
+            break
+
+    total_time = time.time() - t_start
+
+    info = {
+        "cost_history": cost_history,
+        "niter": len(cost_history)-1,
+        "time": total_time
+    }
+
+    return x, info
 
 
