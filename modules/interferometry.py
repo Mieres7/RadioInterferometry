@@ -4,10 +4,10 @@ Cálculos de visibilidades, frecuencias y grillas
 
 import numpy as np
 import cupy as cp
-from cupyx.scipy.signal import fftconvolve
+# from cupyx.scipy.signal import fftconvolve
 from modules.gridder import grid_visibilities
 
-sys=cp
+from modules.backend import xp, fftconvolve, asnumpy
 
 def uvw_to_lambda(uvw, freq_hz):
     c = 299792458.0
@@ -65,8 +65,6 @@ def generate_random_sources(ra0_deg, dec0_deg, N=50, max_offset_deg=1.0, flux_ra
 def to_image(visibilities):
     """IFFT2 universal para NumPy y CuPy"""
 
-    xp = cp.get_array_module(visibilities)
-
     fft2  = xp.fft.ifft2
     fftsh = xp.fft.fftshift
     ifsh  = xp.fft.ifftshift
@@ -75,8 +73,6 @@ def to_image(visibilities):
 
 def to_fourier(image):
     """FFT2 universal para NumPy y CuPy"""
-
-    xp = cp.get_array_module(image)
 
     fft2  = xp.fft.fft2
     fftsh = xp.fft.fftshift
@@ -120,21 +116,21 @@ def get_clean_beam(N, pixel_size, uvw_lambda):
     Calculates Gaussian clean beam
     """
     # 1. B_max
-    B_max_l = sys.max(sys.abs(uvw_lambda[..., 0]))
-    B_max_m = sys.max(sys.abs(uvw_lambda[..., 1]))
+    B_max_l = xp.max(xp.abs(uvw_lambda[..., 0]))
+    B_max_m = xp.max(xp.abs(uvw_lambda[..., 1]))
     
-    sigma_l = 1.0 / (2 * sys.pi * B_max_l)
-    sigma_m = 1.0 / (2 * sys.pi * B_max_m)
+    sigma_l = 1.0 / (2 * xp.pi * B_max_l)
+    sigma_m = 1.0 / (2 * xp.pi * B_max_m)
     
     # 2. l, m grid
-    coords = sys.linspace(-N/2, N/2 - 1, N) * pixel_size
-    l_grid, m_grid = sys.meshgrid(coords, coords)
+    coords = xp.linspace(-N/2, N/2 - 1, N) * pixel_size
+    l_grid, m_grid = xp.meshgrid(coords, coords)
     
     # 3. Clean beam
     exponent = -0.5 * ((l_grid**2 / sigma_l**2) + (m_grid**2 / sigma_m**2))
-    clean_beam = sys.exp(exponent)
+    clean_beam = xp.exp(exponent)
     
-    return clean_beam / sys.max(clean_beam)
+    return clean_beam / xp.max(clean_beam)
 
 def restore_image(I_model, V_obs, weights, uvw_lambda, pixel_size, forward_op, adjoint_op):
     """
@@ -157,15 +153,6 @@ def restore_image(I_model, V_obs, weights, uvw_lambda, pixel_size, forward_op, a
     return I_restored, dirty_residuals, beam
 
 def get_dirty_image(gridded_visibilities, gridded_weights):
-    xp = cp.get_array_module(gridded_visibilities)
-
-    # Transformada inversa: ifftshift → ifft2 → fftshift
+    # Inverse Transform: ifftshift → ifft2 → fftshift
     image_complex = to_image(gridded_visibilities * gridded_weights)
-
-    # Pasar siempre a NumPy antes de graficar
-    if xp is cp:
-        dirty_image = image_complex.real
-    else:
-        dirty_image = cp.asnumpy(image_complex.real)
-
-    return dirty_image
+    return image_complex.real

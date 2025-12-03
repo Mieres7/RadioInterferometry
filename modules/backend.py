@@ -1,54 +1,117 @@
 from numba import cuda
 import cupy as cp
 
+# Selección manual opcional
+USE_CUPY = True      # fuerza CuPy
+USE_NUMBA = True    # o fuerza Numba
+# Si ambos son False → modo auto
+
 
 def get_backend(requested_mode="auto"):
     """
     Devuelve: 'cupy', 'numba', 'numpy'
-    según disponibilidad real (no solo import).
-    Evita fallos por CUDA driver en Cupy o Numba.
+    según disponibilidad real.
     """
-    # --------------- Forzar backend ---------------
+    # --- Forzar numpy ---
     if requested_mode == "numpy":
         return "numpy"
 
+    # --- Forzar cupy ---
     if requested_mode == "cupy":
         try:
-            _ = cp.array([1])  # fuerza a inicializar CUDA
+            _ = cp.array([1])
             return "cupy"
-        except Exception as e:
-            #print(f"[WARN] Cupy solicitado pero no disponible: {e}")
+        except Exception:
             return "numpy"
 
+    # --- Forzar numba ---
     if requested_mode == "numba":
         try:
-            # verifica que CUDA esté disponible y funcional
             if cuda.is_available():
-                # probar que *realmente* funciona
-                # cuda.detect()
                 return "numba"
-            else:
-                raise RuntimeError("Numba CUDA no disponible")
-        except Exception as e:
-            print(f"[WARN] Numba CUDA solicitado pero no disponible: {e}")
-            return "numpy"
+        except:
+            pass
+        return "numpy"
 
-    # --------------- Modo automático ---------------
-    # 1) CUPY
+    # --- Modo automático ---
+    # 1) cupy
     try:
         _ = cp.array([1])
         return "cupy"
-    except Exception:
+    except:
         pass
 
-    # 2) NUMBA CUDA
+    # 2) numba
     try:
-        
         if cuda.is_available():
-            cuda.detect()  # importante: detecta si el driver sirve
+            cuda.detect()
             return "numba"
-    except Exception:
+    except:
         pass
 
     # 3) fallback
     return "numpy"
+
+
+
+
+# ==================================================
+# SELECCIÓN REAL DEL BACKEND
+# ==================================================
+
+if USE_CUPY:
+    BACKEND = get_backend("cupy")
+elif USE_NUMBA:
+    BACKEND = get_backend("numba")
+else:
+    BACKEND = get_backend("auto")
+
+
+# ==================================================
+# IMPORT DINÁMICO: xp y fftconvolve de acuerdo al backend
+# ==================================================
+
+if BACKEND == "cupy":
+    import cupy as xp
+    from cupyx.scipy.signal import fftconvolve
+
+elif BACKEND == "numpy":
+    import numpy as xp
+    from scipy.signal import fftconvolve
+
+elif BACKEND == "numba":
+    import numpy as xp          # arrays CPU
+    from scipy.signal import fftconvolve
+else:
+    import numpy as xp
+    from scipy.signal import fftconvolve
+
+
+# ==================================================
+# Funciones auxiliares del backend
+# ==================================================
+def asnumpy(x):
+    """
+    Convierte un array del backend a numpy.ndarray.
+    - Si BACKEND == "cupy": usa x.get()
+    - Si BACKEND == "numpy" o "numba": devuelve x sin cambios
+    - Maneja escalares, listas, tuplas
+    """
+    # Caso: backend cupy
+    if BACKEND == "cupy":
+        # convertir cupy → numpy
+        try:
+            return x.get()
+        except AttributeError:
+            # ya es numpy o un escalar
+            return x
+
+    # Caso: numpy o numba
+    return x
+
+__all__ = [
+    "xp",
+    "fftconvolve",
+    "asnumpy",
+    "BACKEND",
+]

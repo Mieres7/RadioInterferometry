@@ -5,7 +5,7 @@ import math
 
 from modules.coords import max_basline
 from modules.noise import add_gaussian_noise
-from modules.backend import get_backend
+from modules.backend import get_backend, xp
 
 def grid_visibilities(V=None, uvw_lambda=None, du=None, dv=None, Npix=None, grid_config=None, mode='cupy'):
     """
@@ -123,14 +123,16 @@ def grid_visibilities_cuda(V, uvw, du, dv, Npix=512):
     Igual que antes, pero ahora usa CuPy en vez de NumPy.
     """
 
+    xp = cp
+
     # --- Flatten con CuPy ---
-    vis_real_flat = cp.ascontiguousarray(V.real.reshape(-1).astype(cp.float32))
-    vis_imag_flat = cp.ascontiguousarray(V.imag.reshape(-1).astype(cp.float32))
+    vis_real_flat = xp.ascontiguousarray(V.real.reshape(-1).astype(xp.float32))
+    vis_imag_flat = xp.ascontiguousarray(V.imag.reshape(-1).astype(xp.float32))
 
-    u_flat = cp.ascontiguousarray(uvw[..., 0].reshape(-1).astype(cp.float32))
-    v_flat = cp.ascontiguousarray(uvw[..., 1].reshape(-1).astype(cp.float32))
+    u_flat = xp.ascontiguousarray(uvw[..., 0].reshape(-1).astype(xp.float32))
+    v_flat = xp.ascontiguousarray(uvw[..., 1].reshape(-1).astype(xp.float32))
 
-    weights_flat = cp.ones(vis_real_flat.size, dtype=cp.float32)
+    weights_flat = xp.ones(vis_real_flat.size, dtype=xp.float32)
 
     # --- Convertir CuPy -> Numba (sin copia) ---
     d_u     = cuda.as_cuda_array(u_flat)
@@ -140,9 +142,9 @@ def grid_visibilities_cuda(V, uvw, du, dv, Npix=512):
     d_wgt   = cuda.as_cuda_array(weights_flat)
 
     # --- Crear grillas en CuPy ---
-    grid_r = cp.zeros((Npix, Npix), dtype=cp.float32)
-    grid_i = cp.zeros((Npix, Npix), dtype=cp.float32)
-    grid_w = cp.zeros((Npix, Npix), dtype=cp.float32)
+    grid_r = xp.zeros((Npix, Npix), dtype=xp.float32)
+    grid_i = xp.zeros((Npix, Npix), dtype=xp.float32)
+    grid_w = xp.zeros((Npix, Npix), dtype=xp.float32)
 
     # Convertirlas a Numba
     d_grid_r = cuda.as_cuda_array(grid_r)

@@ -2,7 +2,6 @@
 Funciones astronómicas y de tiempo sidéreo
 """
 
-
 import numpy as np
 from datetime import datetime, timedelta, timezone
 import juliandate as jd

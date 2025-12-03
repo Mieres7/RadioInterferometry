@@ -288,6 +288,97 @@ def plot_speedups(df):
     plt.show()
 
 
+# def plot(
+#     data: List[Dict[str, Any]], 
+#     grid_config: Tuple[int, int],
+#     scale: Optional[float] = None,
+#     fig_title: Optional[str] = None
+# ):
+#     """
+#     Plots a grid of images based on a list of dictionaries.
+    
+#     Args:
+#         data: List of dicts containing 'image', 'title', 'xlabel', 'ylabel', 'cmap'.
+#         grid_config: Tuple (rows, cols).
+#         scale: Multiplier for figure size. Calculated automatically if None.
+#     """
+#     rows, cols = grid_config
+#     total_subplots = rows * cols
+#     N = len(data)
+
+#     # Dynamic scaling logic
+#     if scale is None:
+#         if total_subplots == 1:
+#             scale = 8.0
+#         elif total_subplots <= 4:
+#             scale = 6.0
+#         elif total_subplots <= 12:
+#             scale = 4.0
+#         elif total_subplots <= 30:
+#             scale = 3.0
+#         else:
+#             scale = 2.0
+    
+#     fig_width = scale * cols
+#     fig_height = scale * rows
+    
+#     print(f"Generating plot with scale: {scale} (Figure size: {fig_width:.1f}x{fig_height:.1f} inches)")
+
+#     fig, axes = plt.subplots(rows, cols, figsize=(fig_width, fig_height))
+
+#     if fig_title:
+#         fig.suptitle(fig_title, fontsize=scale * 3.5, y=0.98 if rows > 1 else 1.05)
+
+#     if rows * cols == 1:
+#         axes_list = [axes]  
+#     elif rows == 1 or cols == 1:
+#         axes_list = axes.tolist() 
+#     else:
+#         axes_list = axes.flatten().tolist() 
+    
+#     for i in range(min(N, total_subplots)):
+#         ax = axes_list[i]
+#         item = data[i]
+        
+#         img_data = item.get('image')
+
+#         if hasattr(img_data, 'get'):
+#             img_data = img_data.get()
+#         elif hasattr(img_data, 'cpu'):
+#             img_data = img_data.cpu().numpy()
+
+#         title = item.get('title', '')
+#         xlabel = item.get('xlabel', '')
+#         ylabel = item.get('ylabel', '')
+#         cmap   = item.get('cmap', None)
+        
+#         im = ax.imshow(img_data, cmap=cmap, origin='lower')
+        
+#         # Adjust font size relative to scale
+#         font_scale = max(8, scale * 2.5) 
+#         ax.set_title(title, fontsize=font_scale)
+        
+#         if xlabel: ax.set_xlabel(xlabel, fontsize=font_scale * 0.8)
+#         if ylabel: ax.set_ylabel(ylabel, fontsize=font_scale * 0.8)
+        
+#         # Colorbar handling
+#         divider = make_axes_locatable(ax)
+#         cax = divider.append_axes("right", size="5%", pad=0.05)
+        
+#         if img_data.ndim == 2:
+#             fig.colorbar(im, cax=cax)
+#         else:
+#             cax.axis('off') # Keep layout consistent for RGB images
+
+#     # Hide empty subplots
+#     for j in range(N, total_subplots):
+#         if j < len(axes_list):
+#             axes_list[j].axis('off')
+            
+#     # plt.title(fig_title)
+#     plt.tight_layout()
+#     plt.show()
+
 def plot(
     data: List[Dict[str, Any]], 
     grid_config: Tuple[int, int],
@@ -295,7 +386,7 @@ def plot(
     fig_title: Optional[str] = None
 ):
     """
-    Plots a grid of images based on a list of dictionaries.
+    Plots a grid of images OR 1D-curves based on a list of dictionaries.
     
     Args:
         data: List of dicts containing 'image', 'title', 'xlabel', 'ylabel', 'cmap'.
@@ -329,52 +420,72 @@ def plot(
     if fig_title:
         fig.suptitle(fig_title, fontsize=scale * 3.5, y=0.98 if rows > 1 else 1.05)
 
+    # Unify axes list
     if rows * cols == 1:
-        axes_list = [axes]  
+        axes_list = [axes]
     elif rows == 1 or cols == 1:
-        axes_list = axes.tolist() 
+        axes_list = axes.tolist()
     else:
-        axes_list = axes.flatten().tolist() 
-    
+        axes_list = axes.flatten().tolist()
+
     for i in range(min(N, total_subplots)):
         ax = axes_list[i]
         item = data[i]
         
-        img_data = item.get('image')
+        img = item.get('image')
 
-        if hasattr(img_data, 'get'):
-            img_data = img_data.get()
-        elif hasattr(img_data, 'cpu'):
-            img_data = img_data.cpu().numpy()
+        # CuPy → NumPy
+        if hasattr(img, 'get'):
+            img = img.get()
+        # PyTorch → NumPy
+        elif hasattr(img, 'cpu'):
+            img = img.cpu().numpy()
 
         title = item.get('title', '')
         xlabel = item.get('xlabel', '')
         ylabel = item.get('ylabel', '')
         cmap   = item.get('cmap', None)
-        
-        im = ax.imshow(img_data, cmap=cmap, origin='lower')
-        
-        # Adjust font size relative to scale
-        font_scale = max(8, scale * 2.5) 
+
+        font_scale = max(8, scale * 2.5)
+
+        # -----------------------------------
+        # 🔍 Detectar si es curva 1D
+        # -----------------------------------
+        if np.asarray(img).ndim == 1:
+            ax.plot(img, linewidth=2)
+            ax.set_title(title, fontsize=font_scale)
+            if xlabel: ax.set_xlabel(xlabel, fontsize=font_scale * 0.8)
+            if ylabel: ax.set_ylabel(ylabel, fontsize=font_scale * 0.8)
+            ax.grid(True)
+            continue
+
+        # -----------------------------------
+        # 🔍 Detectar si es imagen RGB
+        # -----------------------------------
+        if img.ndim == 3 and img.shape[-1] in (3, 4):
+            ax.imshow(img, origin='lower')
+            ax.set_title(title, fontsize=font_scale)
+            if xlabel: ax.set_xlabel(xlabel, fontsize=font_scale * 0.8)
+            if ylabel: ax.set_ylabel(ylabel, fontsize=font_scale * 0.8)
+            continue
+
+        # -----------------------------------
+        # Caso normal: imagen 2D
+        # -----------------------------------
+        im = ax.imshow(img, cmap=cmap, origin='lower')
         ax.set_title(title, fontsize=font_scale)
         
         if xlabel: ax.set_xlabel(xlabel, fontsize=font_scale * 0.8)
         if ylabel: ax.set_ylabel(ylabel, fontsize=font_scale * 0.8)
-        
-        # Colorbar handling
+
+        # Colorbar
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        
-        if img_data.ndim == 2:
-            fig.colorbar(im, cax=cax)
-        else:
-            cax.axis('off') # Keep layout consistent for RGB images
+        fig.colorbar(im, cax=cax)
 
-    # Hide empty subplots
+    # Ocultar subplots vacíos
     for j in range(N, total_subplots):
-        if j < len(axes_list):
-            axes_list[j].axis('off')
-            
-    # plt.title(fig_title)
+        axes_list[j].axis('off')
+
     plt.tight_layout()
     plt.show()

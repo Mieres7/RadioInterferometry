@@ -1,21 +1,9 @@
 import cupy as cp
 import numpy as np
-from modules.interferometry import adjoint_op, forward_op
-from modules.backend import get_backend
-
 import time
-import numpy as np
+from modules.interferometry import adjoint_op, forward_op
+from modules.backend import get_backend, xp
 
-# try:
-#     import cupy as cp
-#     xp = cp
-#     USING_CUPY = True
-# except:
-#     xp = np
-#     USING_CUPY = False
-
-USING_CUPY = False
-sys = np
 
 #Array = np.ndarray
 
@@ -27,9 +15,9 @@ def l1(image):
     L1 Regularization
     '''
     # Cost Function
-    cost = sys.sum(sys.abs(image)) 
+    cost = xp.sum(xp.abs(image)) 
     # Gradient
-    grad = sys.sign(image) 
+    grad = xp.sign(image) 
 
     return cost.real, grad.real
     
@@ -39,17 +27,17 @@ def tsv(image):
     Total Squared Variation Regularization
     '''
     # Cost Functions
-    diff_x = sys.roll(image, -1, axis=1) - image 
-    diff_y = sys.roll(image, -1, axis=0) - image 
+    diff_x = xp.roll(image, -1, axis=1) - image 
+    diff_y = xp.roll(image, -1, axis=0) - image 
     
-    cost = sys.sum(diff_x**2 + diff_y**2)
+    cost = xp.sum(diff_x**2 + diff_y**2)
     
     # Gradient
-    im1_x = sys.roll(image, 1, axis=1)
-    im1_y = sys.roll(image, 1, axis=0)
+    im1_x = xp.roll(image, 1, axis=1)
+    im1_y = xp.roll(image, 1, axis=0)
     
-    ip1_x = sys.roll(image, -1, axis=1)
-    ip1_y = sys.roll(image, -1, axis=0)
+    ip1_x = xp.roll(image, -1, axis=1)
+    ip1_y = xp.roll(image, -1, axis=0)
     
     lap_x = (ip1_x - image) - (image - im1_x)
     lap_y = (ip1_y - image) - (image - im1_y)
@@ -62,10 +50,12 @@ def entropy(image):
 
     epsilon = 1e-12
 
-    log_term = sys.log(image + epsilon)
+    img = xp.clip(image, epsilon, None)
+
+    log_term = xp.log(img)
     
     # Cost function
-    cost = sys.sum(image * log_term - image)
+    cost = xp.sum(img * log_term - img) 
     # Gradient
     grad = log_term
     
@@ -76,17 +66,11 @@ Objective function
 '''
 def obj_function(image, V_obs, weights, reg_lambda, reg_func):
 
-    backend = get_backend('cupy')
-    if backend == 'cupy':
-        sys = cp
-    else:
-        sys = np
-
     V_pred = forward_op(Image=image, gridded=True)
     residual = V_pred - V_obs
 
     # cost
-    f_cost = 0.5 * sys.sum(weights * sys.abs(residual)**2)
+    f_cost = 0.5 * xp.sum(weights * xp.abs(residual)**2)
     # gradient
     grad = adjoint_op(weights * residual)
     grad = grad.real
@@ -130,14 +114,14 @@ class LBFGSState:
 # Helpers
 # -------------------------------------
 def _as_xp(arr):
-    if USING_CUPY and isinstance(arr, np.ndarray):
+    if xp is cp and isinstance(arr, np.ndarray):
         return cp.asarray(arr)
     return arr
 def _norm(x):
-    return float(sys.linalg.norm(x.ravel()))
+    return float(xp.linalg.norm(x.ravel()))
 
 def _dot(a, b):
-    return float(sys.vdot(a.ravel(), b.ravel()))
+    return float(xp.vdot(a.ravel(), b.ravel()))
 
 
 '''
@@ -203,9 +187,16 @@ def lbfgs_optimize(
     max_iter=100,
     gtol=1e-6,
     ftol=1e-12,
-    verbose=True
+    verbose=True,
+    # ------------------------
+    # Parámetros de Armijo
+    # ------------------------
+    armijo_alpha0=1.0,
+    armijo_rho=0.5,
+    armijo_c1=1e-4,
+    armijo_alpha_min=1e-12,
+    armijo_max_iter=50
 ):
-    global sys, USING_CUPY
 
     x = _as_xp(x0)
 
@@ -234,16 +225,27 @@ def lbfgs_optimize(
 
         direction = lbfgs_two_loop(grad, state)
 
-        # direction must be descent
+        # ensure descent direction
         if _dot(grad, direction) >= 0:
             direction = -grad
 
-        # line search
+        # -----------------------
+        # LINE SEARCH (Armijo)
+        # -----------------------
         alpha, cost_new, status = armijo_line_search(
-            x, direction, grad, cost, args
+            image=x,
+            direction=direction,
+            grad=grad,
+            current_cost=cost,
+            args=args,
+            alpha0=armijo_alpha0,
+            rho=armijo_rho,
+            c1=armijo_c1,
+            alpha_min=armijo_alpha_min,
+            max_iter=armijo_max_iter
         )
 
-        # fallback if needed
+        # fallback
         if status in ["non_descent", "min_alpha"]:
             direction = -grad
             alpha = 1e-3
@@ -269,9 +271,12 @@ def lbfgs_optimize(
         cost_history.append(cost)
 
         if verbose:
-            print(f"[LBFGS] it={k} cost={cost:.6e} ||g||={_norm(grad):.3e} alpha={alpha:.2e}")
+            print(
+                f"[LBFGS] it={k} cost={cost:.6e} "
+                f"||g||={_norm(grad):.3e} alpha={alpha:.2e}"
+            )
 
-        # stopping by function decrease
+        # stopping by Δf
         denom = abs(cost) + abs(cost_prev) + 1e-16
         rel_change = 2 * abs(cost - cost_prev) / denom
         if rel_change <= ftol:
@@ -288,5 +293,6 @@ def lbfgs_optimize(
     }
 
     return x, info
+
 
 
