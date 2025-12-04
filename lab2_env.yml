@@ -13,6 +13,12 @@ dependencies:
   - matplotlib
   - pandas
 
+  # dask
+  - dask # Core library (arrays, dataframes, bags)
+  - distributed # Scheduler avanzado (necesario para alto rendimiento)
+  - bokeh # Para ver el Dashboard de diagnóstico en Jupyter (puerto 8787)
+  - dask-image
+
   # Versiones específicas solicitadas
 
   # CUDA Toolkit exacto solicitado
