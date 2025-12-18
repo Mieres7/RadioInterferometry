@@ -5,7 +5,7 @@ Defines a full simulation of diferent kinds.
 import numpy as np
 
 from modules.coords import baselines, enu_to_altaz, hor_to_eq, eq_to_uvw
-from modules.catalogs import SOURCES_CATALOG, select_vla_frequencies
+from modules.catalogs import SOURCES_CATALOG, select_frequencies
 from modules.astronomy import ra_dec_to_radians, H_range
 from modules.interferometry import generate_random_sources, uvw_to_lambda_range, visibilities_from_sources
 from modules.utils import read_cfg_to_enu
@@ -58,8 +58,7 @@ def visibilities_simulation(config, get_grid_config=False):
     uvw = eq_to_uvw(H, delta_src, r_eq)
     # 6. Transformación a longitud de Onda
 
-    if interferometer["name"] == "VLA":
-        frequencies = select_vla_frequencies(interferometer["band_name"], n_freqs)
+    frequencies = select_frequencies(interferometer["band_name"], interferometer['name'], n_freqs)
 
     uvw_lambda, _ = uvw_to_lambda_range(uvw, frequencies)
 

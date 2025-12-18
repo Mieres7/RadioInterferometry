@@ -36,7 +36,5 @@ dependencies:
   - ipykernel
 
   # pip packages
-  - pip
   - pip:
-      - juliandate==1.0.5
-      - ipytest
+      - -r requirements.txt

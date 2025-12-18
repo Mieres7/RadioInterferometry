@@ -24,7 +24,8 @@ def plot_uv_coverage(
     color="deepskyblue",
     symmetry_color=None,
     cmap=None,
-    color_by=None
+    color_by=None,
+    is_lambda=False # uvw is already in lambda units
 ):
     """
     Plot uvw coverage
@@ -37,7 +38,8 @@ def plot_uv_coverage(
         scale = 1e-3
         label = "[km]"
     elif unit.lower() in ["λ", "lambda", "wavelength"]:
-        uvw, lam = uvw_to_lambda(uvw, freq_hz)
+        if not is_lambda:
+            uvw, lam = uvw_to_lambda(uvw, freq_hz)
         scale = 1.0
         label = "[λ]"
     else:

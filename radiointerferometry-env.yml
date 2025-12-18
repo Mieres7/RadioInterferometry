@@ -1,4 +1,4 @@
-name: lab2_env
+name: radiointerferometry-env
 channels:
   - conda-forge
   - nvidia
@@ -36,7 +36,5 @@ dependencies:
   - ipykernel
 
   # pip packages
-  - pip
   - pip:
-      - juliandate==1.0.5
-      - ipytest
+      - -r requirements.txt

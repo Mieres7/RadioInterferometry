@@ -12,26 +12,41 @@ SOURCES_CATALOG = {
         'LMC': {'RA': '05:23:35', 'Dec': '-69:45:22'}
     }
 
-VLA_BANDS = {
-    "L": (1.0e9, 2.0e9),
-    "S": (2.0e9, 4.0e9),
-    "C": (4.0e9, 8.0e9),
-    "X": (8.0e9, 12.0e9),
-    "Ku": (12.0e9, 18.0e9),
-    "K": (18.0e9, 26.5e9),
-    "Ka": (26.5e9, 40.0e9),
-    "Q": (40.0e9, 50.0e9),
+INTERFEROMETER_BANDS = {
+    'VLA' : {
+        "L": (1.0e9, 2.0e9),
+        "S": (2.0e9, 4.0e9),
+        "C": (4.0e9, 8.0e9),
+        "X": (8.0e9, 12.0e9),
+        "KU": (12.0e9, 18.0e9),
+        "K": (18.0e9, 26.5e9),
+        "KA": (26.5e9, 40.0e9),
+        "Q": (40.0e9, 50.0e9),
+    },
+    'ALMA' : {
+        "BAND 1":  (35.0e9, 50.0e9),
+        "BAND 2":  (67.0e9, 116.0e9),
+        "BAND 3":  (84.0e9, 116.0e9),
+        "BAND 4":  (125.0e9, 163.0e9),
+        "BAND 5":  (163.0e9, 211.0e9),
+        "BAND 6":  (211.0e9, 275.0e9),
+        "BAND 7":  (275.0e9, 373.0e9),
+        "BAND 8":  (385.0e9, 500.0e9),
+        "BAND 9":  (602.0e9, 720.0e9),
+        "BAND 10": (787.0e9, 950.0e9),
+    }
 }
 
-def select_vla_frequencies(band_name, num_frequencies=4):
+
+def select_frequencies(band_name, interferometer_band, num_frequencies=4):
     """
-    Selects a VLA band and generates a specified number of frequencies from its range.
+    Selects a band and generates a specified number of frequencies from its range.
     """
     band = band_name.upper() # Make it case-insensitive
-    if band not in VLA_BANDS:
-        raise ValueError(f"Band '{band}' not recognized. Available bands: {list(VLA_BANDS.keys())}")
+    if band not in INTERFEROMETER_BANDS[interferometer_band]:
+        raise ValueError(f"Band '{band}' not recognized. Available bands: {list(INTERFEROMETER_BANDS[interferometer_band].keys())}")
 
-    min_freq, max_freq = VLA_BANDS[band]
+    min_freq, max_freq = INTERFEROMETER_BANDS[interferometer_band][band]
     
     # Generate evenly spaced frequencies within the selected band
     frequencies = np.linspace(min_freq, max_freq, num_frequencies)
