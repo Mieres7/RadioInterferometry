@@ -56,17 +56,19 @@ def visibilities_simulation(config, get_grid_config=False):
 
     # Obtención muestreo
     uvw = eq_to_uvw(H, delta_src, r_eq)
-    # 6. Transformación a longitud de Onda
 
-    frequencies = select_frequencies(interferometer["band_name"], interferometer['name'], n_freqs)
+    # 6. Transformación a longitud de Onda
+    frequencies, channel_bandwith = select_frequencies(interferometer["band_name"], interferometer['name'], n_freqs)
 
     uvw_lambda, _ = uvw_to_lambda_range(uvw, frequencies)
 
     ra0_deg = np.degrees(ra_dec_to_radians(SOURCES_CATALOG['Sirius']['RA']))  # Sirius A
     dec0_deg = np.degrees(ra_dec_to_radians(SOURCES_CATALOG['Sirius']['Dec']))
+    
     sources = generate_random_sources(ra0_deg, dec0_deg, N=n_sources, max_offset_deg=max_offset_deg, flux_range=flux_range, seed=seed)
 
-    V, _, _, _, _ = visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg)
+    V, _, l, m, n = visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg)
 
-    return V, uvw, uvw_lambda, frequencies, baselines_enu
+    return V, uvw, uvw_lambda, [frequencies, channel_bandwith], baselines_enu, sources, [l,m,n]
+
 

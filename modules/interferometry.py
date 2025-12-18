@@ -55,6 +55,7 @@ def visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg, sigma_pb=0
 
 
 def generate_random_sources(ra0_deg, dec0_deg, N=50, max_offset_deg=1.0, flux_range=(0.1, 2.0), seed=None):
+    '''Generate random sources considering a slight displacement from the center (ra0, dec0)'''
     rng = np.random.default_rng(seed)
     ras = ra0_deg + rng.uniform(-max_offset_deg, max_offset_deg, N)
     decs = dec0_deg + rng.uniform(-max_offset_deg, max_offset_deg, N)
