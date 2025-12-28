@@ -51,7 +51,6 @@ def select_frequencies(band_name, interferometer_band, num_frequencies=4):
     # Generate evenly spaced frequencies within the selected band
     frequencies = np.linspace(min_freq, max_freq, num_frequencies)
     
-    total_bandwidth = max_freq - min_freq
-    channel_bandwidth = total_bandwidth / num_frequencies
+    channel_bandwidth = frequencies[1] - frequencies[0]
 
     return frequencies, channel_bandwidth

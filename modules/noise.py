@@ -47,11 +47,11 @@ def add_thermal_noise(V, T_sys, delta_nu, tau):
     # sigma = (2 * kb * Tsys) / sqrt(delta_nu * tau) 
     sigma_raw = (2 * kb * T_sys) / np.sqrt(delta_nu * tau)
     sigma_thermal = sigma_raw / 1e-26
-    
+
     # El ruido térmico es gausiano y complejo. 
     # Se genera para la parte real e imaginaria por separado.
-    noise_real = np.random.normal(0, sigma_thermal, V.shape)
-    noise_imag = np.random.normal(0, sigma_thermal, V.shape)
+    noise_real = np.random.normal(0, sigma_thermal / np.sqrt(2), V.shape)
+    noise_imag = np.random.normal(0, sigma_thermal / np.sqrt(2), V.shape)
     
     V_noisy = V + (noise_real + 1j * noise_imag)
     
