@@ -18,7 +18,8 @@ def visibilities_simulation(config, get_grid_config=False):
     latitude = config["latitude"]
     longitude = config["longitude"]
     file_route = config["file_route"]
-    catalog_source = config["catalog_source"]
+    catalog_source = config.get('catalog_source',None)
+    ra_dec = config.get('ra-dec',None)
     utc_start = config["utc_start"]
     utc_end = config["utc_end"]
     step_min = config["step_min"]
@@ -40,10 +41,18 @@ def visibilities_simulation(config, get_grid_config=False):
     r_eq = hor_to_eq(baselines_enu, alt, az, phi=latitude)
 
     # 4. Transformación XYZ -> uvw
-    sirius_dec = SOURCES_CATALOG[catalog_source]['Dec']
-    sirius_ra = SOURCES_CATALOG[catalog_source]['RA']
-    delta_src = ra_dec_to_radians(sirius_dec, is_ra=False)
-    ra_src = ra_dec_to_radians(sirius_ra)
+    if catalog_source is not None and ra_dec is not None:
+        raise Exception('Must use a soruce or ra_dec separately')
+    
+    if ra_dec:
+        ra = ra_dec[0]
+        dec = ra_dec[1]
+    else:
+        dec = SOURCES_CATALOG[catalog_source]['Dec']
+        ra = SOURCES_CATALOG[catalog_source]['RA']
+
+    delta_src = ra_dec_to_radians(dec, is_ra=False)
+    ra_src = ra_dec_to_radians(ra)
 
     # Rango de horas angulo
     _, H, _ = H_range(
@@ -62,8 +71,8 @@ def visibilities_simulation(config, get_grid_config=False):
 
     uvw_lambda, _ = uvw_to_lambda_range(uvw, frequencies)
 
-    ra0_deg = np.degrees(ra_dec_to_radians(SOURCES_CATALOG['Sirius']['RA']))  # Sirius A
-    dec0_deg = np.degrees(ra_dec_to_radians(SOURCES_CATALOG['Sirius']['Dec']))
+    ra0_deg = np.degrees(ra_src)  
+    dec0_deg = np.degrees(delta_src)
     
     sources = generate_random_sources(ra0_deg, dec0_deg, N=n_sources, max_offset_deg=max_offset_deg, flux_range=flux_range, seed=seed)
 

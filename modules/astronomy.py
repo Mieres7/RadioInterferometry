@@ -24,10 +24,41 @@ def local_sidereal_time(longitude=-70.76, utc=None, single=True):
     return rad if single else (deg, rad, h, m, s)
 
 
+import re
+import numpy as np
+
 def ra_dec_to_radians(radec, is_ra=True):
-    h, m, s = map(float, radec.split(':'))
-    value = abs(h) + m / 60 + s / 3600
-    degrees = value * 15 if is_ra else (value if h >= 0 else -value)
+    # Convertimos a string por si acaso entra un float/int directo
+    radec_str = str(radec).strip()
+    
+    # Busca todos los números (incluyendo decimales y signos)
+    parts = re.findall(r"[-+]?\d*\.\d+|\d+", radec_str)
+    parts = list(map(float, parts))
+    
+    if len(parts) == 0:
+        raise ValueError(f"No se encontraron números en: {radec}")
+
+    # CASO 1: Ya viene en grados decimales (solo un número)
+    if len(parts) == 1:
+        decimal_value = parts[0]
+        # Si es RA y viene en un solo número, asumimos que son GRADOS.
+        # (Si fueran horas, habría que multiplicarlo por 15 aquí).
+        degrees = decimal_value
+        
+    # CASO 2: Formato sexagesimal (H/D, M, S)
+    else:
+        val, m, s = parts[0], parts[1], parts[2] if len(parts) > 2 else 0.0
+        
+        # Calculamos el valor absoluto decimal
+        decimal_value = abs(val) + m / 60.0 + s / 3600.0
+        
+        if is_ra:
+            # Ascensión Recta: 1h = 15 grados
+            degrees = decimal_value * 15
+        else:
+            # Declinación: Respetamos el signo del primer componente
+            degrees = decimal_value if val >= 0 else -decimal_value
+        
     return np.deg2rad(degrees)
 
 
