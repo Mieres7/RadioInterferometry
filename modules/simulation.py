@@ -24,6 +24,7 @@ def visibilities_simulation(config, get_grid_config=False):
     utc_end = config["utc_end"]
     step_min = config["step_min"]
     n_freqs = config["n_freqs"]
+    bandwidth = config.get('bandwidth', None)
     interferometer = config["interferometer"]
     n_sources = config["n_sources"]
     max_offset_deg = config["max_offset_deg"]
@@ -67,7 +68,7 @@ def visibilities_simulation(config, get_grid_config=False):
     uvw = eq_to_uvw(H, delta_src, r_eq)
 
     # 6. Transformación a longitud de Onda
-    frequencies, channel_bandwith = select_frequencies(interferometer["band_name"], interferometer['name'], n_freqs)
+    frequencies, channel_bandwidth = select_frequencies(band_name=interferometer["band_name"], interferometer_band=interferometer["name"], num_frequencies=n_freqs, channel_bandwidth=bandwidth)
 
     uvw_lambda, _ = uvw_to_lambda_range(uvw, frequencies)
 
@@ -78,6 +79,6 @@ def visibilities_simulation(config, get_grid_config=False):
 
     V, _, l, m, n = visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg)
 
-    return V, uvw, uvw_lambda, [frequencies, channel_bandwith], baselines_enu, sources, [l,m,n]
+    return V, uvw, uvw_lambda, [frequencies, channel_bandwidth], baselines_enu, sources, [l,m,n]
 
 

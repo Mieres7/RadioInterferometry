@@ -56,3 +56,57 @@ def add_thermal_noise(V, T_sys, delta_nu, tau):
     V_noisy = V + (noise_real + 1j * noise_imag)
     
     return V_noisy, sigma_thermal
+
+
+def narrowband_rfi(
+    V,
+    frequencies,
+    amplitude,
+    f_rfi=None,
+    k_rfi=None,
+    phase_mode="random",
+    seed=None
+):
+    """
+    Inject narrowband RFI:
+    V_RFI = A_RFI * exp(i phi) * delta(f - f_RFI)
+
+    Either f_rfi (Hz) or k_rfi (channel index) must be provided.
+    """
+
+    rng = np.random.default_rng(seed)
+    frequencies = np.asarray(frequencies)
+
+    N_baselines, N_times, N_freqs = V.shape
+
+    # --- sanity checks ---
+    if f_rfi is not None and k_rfi is not None:
+        raise ValueError("Provide only one of f_rfi or k_rfi")
+
+    if f_rfi is None and k_rfi is None:
+        raise ValueError("Either f_rfi or k_rfi must be provided")
+
+    # --- select channel ---
+    if k_rfi is not None:
+        if not (0 <= k_rfi < N_freqs):
+            raise ValueError(f"k_rfi must be in [0, {N_freqs-1}]")
+        k = k_rfi
+        f_rfi = frequencies[k]
+    else:
+        k = np.argmin(np.abs(frequencies - f_rfi))
+
+    # --- phase ---
+    if phase_mode == "random":
+        phase = rng.uniform(0, 2*np.pi, size=(N_baselines, N_times))
+    elif phase_mode == "constant":
+        phase = np.zeros((N_baselines, N_times))
+    else:
+        raise ValueError("phase_mode must be 'random' or 'constant'")
+
+    rfi_signal = amplitude * np.exp(1j * phase)
+
+    V_rfi = np.zeros_like(V)
+    V_rfi[:, :, k] = rfi_signal
+
+    return V_rfi, k, f_rfi
+

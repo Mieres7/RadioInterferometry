@@ -42,19 +42,103 @@ INTERFEROMETER_BANDS = {
 }
 
 
-def select_frequencies(band_name, interferometer_band, num_frequencies=4):
+# def select_frequencies(band_name, interferometer_band, num_frequencies=4):
+#     """
+#     Selects a band and generates a specified number of frequencies from its range.
+#     """
+#     band = band_name.upper() # Make it case-insensitive
+#     if band not in INTERFEROMETER_BANDS[interferometer_band]:
+#         raise ValueError(f"Band '{band}' not recognized. Available bands: {list(INTERFEROMETER_BANDS[interferometer_band].keys())}")
+
+#     min_freq, max_freq = INTERFEROMETER_BANDS[interferometer_band][band]
+    
+#     # Generate evenly spaced frequencies within the selected band
+#     frequencies = np.linspace(min_freq, max_freq, num_frequencies)
+    
+#     channel_bandwidth = frequencies[1] - frequencies[0]
+
+#     return frequencies, channel_bandwidth
+
+
+def select_frequencies(
+    band_name,
+    interferometer_band,
+    num_frequencies=4,
+    channel_bandwidth=None,
+    center_frequency=None
+):
     """
     Selects a band and generates a specified number of frequencies from its range.
     """
-    band = band_name.upper() # Make it case-insensitive
-    if band not in INTERFEROMETER_BANDS[interferometer_band]:
-        raise ValueError(f"Band '{band}' not recognized. Available bands: {list(INTERFEROMETER_BANDS[interferometer_band].keys())}")
 
-    min_freq, max_freq = INTERFEROMETER_BANDS[interferometer_band][band]
-    
-    # Generate evenly spaced frequencies within the selected band
-    frequencies = np.linspace(min_freq, max_freq, num_frequencies)
-    
-    channel_bandwidth = frequencies[1] - frequencies[0]
+    if num_frequencies < 1:
+        raise ValueError("num_frequencies must be >= 1")
+
+    band = band_name.upper()
+
+    if band not in INTERFEROMETER_BANDS[interferometer_band]:
+        raise ValueError(
+            f"Band '{band}' not recognized. "
+            f"Available bands: {list(INTERFEROMETER_BANDS[interferometer_band].keys())}"
+        )
+
+    band_min, band_max = INTERFEROMETER_BANDS[interferometer_band][band]
+    band_center = 0.5 * (band_min + band_max)
+    band_width_total = band_max - band_min
+
+    # ======================
+    # Single channel
+    # ======================
+    if num_frequencies == 1:
+
+        if center_frequency is None:
+            center_frequency = band_center
+
+        if not (band_min <= center_frequency <= band_max):
+            raise ValueError("center_frequency outside band")
+
+        if channel_bandwidth is None:
+            channel_bandwidth = band_width_total
+
+        if channel_bandwidth <= 0:
+            raise ValueError("channel_bandwidth must be > 0")
+
+        f_min = center_frequency - channel_bandwidth / 2
+        f_max = center_frequency + channel_bandwidth / 2
+
+        if f_min < band_min or f_max > band_max:
+            raise ValueError("channel exceeds band limits")
+
+        frequencies = np.array([center_frequency])
+        return frequencies, channel_bandwidth
+
+    # ======================
+    # Multiple channels
+    # ======================
+    if channel_bandwidth is None:
+        # Use full band
+        frequencies = np.linspace(band_min, band_max, num_frequencies)
+        channel_bandwidth = frequencies[1] - frequencies[0]
+        return frequencies, channel_bandwidth
+
+    # Use user-defined channel spacing
+    if channel_bandwidth <= 0:
+        raise ValueError("channel_bandwidth must be > 0")
+
+    total_bw = (num_frequencies - 1) * channel_bandwidth
+
+    if total_bw > band_width_total:
+        raise ValueError(
+            "Requested channels exceed available band"
+        )
+
+    f_min = band_center - total_bw / 2
+    f_max = band_center + total_bw / 2
+
+    frequencies = np.linspace(
+        f_min,
+        f_max,
+        num_frequencies
+    )
 
     return frequencies, channel_bandwidth
