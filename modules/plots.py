@@ -5,6 +5,7 @@ Generación de Gráficos
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import math
 from typing import List, Tuple, Any, Dict, Optional
 
@@ -410,5 +411,153 @@ def plot(
     for j in range(N, total_subplots):
         axes_list[j].axis('off')
 
+    plt.tight_layout()
+    plt.show()
+
+def plot_uv_coverage_2(uvw, bins=512):
+    # Extraemos u y v (asegúrate de que estén en las unidades deseadas, ej. baselines)
+    u = uvw[..., 0].flatten()
+    v = uvw[..., 1].flatten()
+    
+    # El paper asume simetría conjugada completa
+    u_full = np.concatenate([u, -u])
+    v_full = np.concatenate([v, -v])
+    
+    plt.figure(figsize=(8, 7))
+    
+    # Histograma 2D con escala logarítmica para n_B
+    # El rango debe coincidir con la extensión de tus baselines (ej. -250 a 250)
+    h = plt.hist2d(u_full, v_full, bins=bins, 
+                   cmap='viridis', # O 'YlGnBu_r' para un look similar
+                   norm=colors.LogNorm(vmin=1, vmax=1e6)) # Rango 10^0 a 10^6 como el paper
+    
+    plt.colorbar(label='$n_B$')
+    plt.xlabel('u')
+    plt.ylabel('v')
+    plt.title('Baseline Distribution (SKA-Low Replica)')
+    plt.axis('equal')
+    plt.show()
+
+
+def plot_time_frequency(
+    V,
+    frequencies,
+    eps=1e-6,
+    figsize=(10, 6),
+    title_suffix=""
+):
+    """
+    Waterfall plot (time vs frequency) for amplitude and phase
+    """
+
+    frequencies = np.asarray(frequencies)
+
+    # Average over baselines
+    V_tf = np.mean(V, axis=0)  # (time, freq)
+
+    # --- Amplitude ---
+    amp = np.abs(V_tf)
+    amp_log = np.log10(amp / np.median(amp) + eps)
+
+    vmin = np.percentile(amp_log, 5)
+    vmax = np.percentile(amp_log, 99.5)
+
+    # --- Phase ---
+    phase = np.angle(V_tf)
+
+    extent = [
+        frequencies.min() / 1e6,
+        frequencies.max() / 1e6,
+        0,
+        amp_log.shape[0]
+    ]
+
+    fig, axs = plt.subplots(2, 1, figsize=figsize, sharex=True)
+
+    im0 = axs[0].imshow(
+        amp_log,
+        aspect="auto",
+        origin="lower",
+        cmap="viridis",
+        vmin=vmin,
+        vmax=vmax,
+        extent=extent
+    )
+    axs[0].set_ylabel("Time Integrations")
+    axs[0].set_title(f"Amplitude (log scale) {title_suffix}")
+    plt.colorbar(im0, ax=axs[0], label="log₁₀(|V| / median)")
+
+    im1 = axs[1].imshow(
+        phase,
+        aspect="auto",
+        origin="lower",
+        cmap="twilight",
+        vmin=-np.pi,
+        vmax=np.pi,
+        extent=extent
+    )
+    axs[1].set_xlabel("Frequency [MHz]")
+    axs[1].set_ylabel("Time Integrations")
+    axs[1].set_title(f"Phase {title_suffix}")
+    plt.colorbar(im1, ax=axs[1], label="Phase [rad]")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_rfi_spectrum(
+    V,
+    frequencies,
+    eps=1e-12,
+    log_mode="log10",
+    normalize=True,
+    figsize=(10, 4),
+    title=""
+):
+    """
+    Plot scalar-averaged cross-power spectrum for RFI inspection.
+
+    Parameters
+    ----------
+    V : complex ndarray (N_baselines, N_times, N_freqs)
+        Visibilities.
+    frequencies : ndarray (N_freqs,)
+        Frequencies in Hz.
+    eps : float
+        Small value to avoid log(0).
+    log_mode : {'log10', 'dB'}
+        Log scaling.
+    normalize : bool
+        Normalize by median amplitude.
+    """
+
+    frequencies = np.asarray(frequencies)
+
+    # --- scalar average ---
+    amp = np.abs(V)
+    amp_mean = amp.mean(axis=(0, 1))  # average over baselines & time
+
+    if normalize:
+        amp_mean = amp_mean / np.median(amp_mean)
+
+    # --- log scaling ---
+    if log_mode == "log10":
+        y = np.log10(amp_mean + eps)
+        ylabel = r"log$_{10}$(|V|)"
+    elif log_mode == "dB":
+        y = 10 * np.log10(amp_mean + eps)
+        ylabel = r"10 log$_{10}$(|V|)"
+    else:
+        raise ValueError("log_mode must be 'log10' or 'dB'")
+
+    # --- plot ---
+    plt.figure(figsize=figsize)
+    plt.plot(frequencies / 1e6, y, lw=1.0, color="black")
+
+    plt.xlabel("Frequency [MHz]")
+    plt.ylabel(ylabel)
+    plt.title(title or "Scalar-averaged cross-power spectrum")
+
+    plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.show()

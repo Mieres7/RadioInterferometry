@@ -56,7 +56,7 @@ def visibilities_simulation(config):
     ra_src = ra_dec_to_radians(ra)
 
     # Rango de horas angulo
-    _, H, _ = H_range(
+    _, H, _, times_sec = H_range(
         ra_rad=ra_src,
         utc_start=utc_start,
         utc_end=utc_end,
@@ -79,6 +79,6 @@ def visibilities_simulation(config):
 
     V, _, l, m, n = visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg)
 
-    return V, uvw, uvw_lambda, [frequencies, channel_bandwidth], baselines_enu, sources, [l,m,n]
+    return V, uvw, uvw_lambda, [frequencies, channel_bandwidth], baselines_enu, sources, [l,m,n], times_sec
 
 

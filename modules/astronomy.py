@@ -77,4 +77,7 @@ def H_range(ra_rad, utc_start, utc_end, longitude=-70.76, step_minutes=5):
     ])
 
     H = (lst_rad - ra_rad + np.pi) % (2 * np.pi) - np.pi
-    return times_utc, H, lst_rad
+
+    times_sec = np.array([(t - times_utc[0]).total_seconds() for t in times_utc])
+
+    return times_utc, H, lst_rad, times_sec
