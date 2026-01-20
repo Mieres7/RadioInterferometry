@@ -508,6 +508,7 @@ def plot_time_frequency(
 def plot_rfi_spectrum(
     V,
     frequencies,
+    f_range=None,
     eps=1e-12,
     log_mode="log10",
     normalize=True,
@@ -523,19 +524,22 @@ def plot_rfi_spectrum(
         Visibilities.
     frequencies : ndarray (N_freqs,)
         Frequencies in Hz.
-    eps : float
-        Small value to avoid log(0).
-    log_mode : {'log10', 'dB'}
-        Log scaling.
-    normalize : bool
-        Normalize by median amplitude.
+    f_range : tuple (f_start, f_end), optional
+        Frequency range to display [Hz].
     """
 
     frequencies = np.asarray(frequencies)
 
+    # --- spectral selection ---
+    if f_range is not None:
+        f_start, f_end = f_range
+        mask = (frequencies >= f_start) & (frequencies <= f_end)
+        frequencies = frequencies[mask]
+        V = V[:, :, mask]
+
     # --- scalar average ---
     amp = np.abs(V)
-    amp_mean = amp.mean(axis=(0, 1))  # average over baselines & time
+    amp_mean = amp.mean(axis=(0, 1))
 
     if normalize:
         amp_mean = amp_mean / np.median(amp_mean)

@@ -58,6 +58,94 @@ def add_thermal_noise(V, T_sys, delta_nu, tau):
     return V_noisy, sigma_thermal
 
 
+# def narrowband_rfi(
+#     V,
+#     frequencies,
+#     amplitude,
+#     f_rfi=None,
+#     k_rfi=None,
+#     phase_mode="random",
+#     seed=None
+# ):
+#     """
+#     Inject narrowband RFI:
+#     V_RFI = A_RFI * exp(i phi) * delta(f - f_RFI)
+
+#     Either f_rfi (Hz) or k_rfi (channel index) must be provided.
+#     """
+
+#     rng = np.random.default_rng(seed)
+#     frequencies = np.asarray(frequencies)
+
+#     N_baselines, N_times, N_freqs = V.shape
+
+#     # --- sanity checks ---
+#     if f_rfi is not None and k_rfi is not None:
+#         raise ValueError("Provide only one of f_rfi or k_rfi")
+
+#     if f_rfi is None and k_rfi is None:
+#         raise ValueError("Either f_rfi or k_rfi must be provided")
+
+#     # --- normalize inputs to arrays ---
+#     if k_rfi is not None:
+#         k_list = np.atleast_1d(k_rfi).astype(int)
+#         if np.any((k_list < 0) | (k_list >= N_freqs)):
+#             raise ValueError(f"k_rfi must be in [0, {N_freqs-1}]")
+#         f_list = frequencies[k_list]
+#     else:
+#         f_list = np.atleast_1d(f_rfi)
+#         k_list = np.array([
+#             np.argmin(np.abs(frequencies - f)) for f in f_list
+#         ])
+
+#     n_rfi = len(k_list)
+
+#     # --- amplitude handling ---
+#     amplitude = np.asarray(amplitude)
+
+#     # Case 1: random amplitude range (amin, amax)
+#     if amplitude.ndim == 1 and amplitude.size == 2:
+#         amin, amax = amplitude
+#         if amin < 0 or amax < 0 or amax <= amin:
+#             raise ValueError("amplitude range must be (amin, amax) with 0 <= amin < amax")
+
+#         # one random amplitude per RFI channel
+#         amplitude = rng.uniform(amin, amax, size=n_rfi)
+
+#     # Case 2: scalar amplitude
+#     elif amplitude.size == 1:
+#         amplitude = np.repeat(amplitude.item(), n_rfi)
+
+#     # Case 3: one amplitude per RFI channel
+#     elif amplitude.size == n_rfi:
+#         pass
+
+#     else:
+#         raise ValueError(
+#             "amplitude must be scalar, (amin, amax), or same length as RFI channels"
+#         )
+
+
+#     # --- phase ---
+#     if phase_mode == "random":
+#         phase = rng.uniform(
+#             0, 2*np.pi,
+#             size=(N_baselines, N_times, n_rfi)
+#         )
+#     elif phase_mode == "constant":
+#         phase = np.zeros((N_baselines, N_times, n_rfi))
+#     else:
+#         raise ValueError("phase_mode must be 'random' or 'constant'")
+
+#     rfi_signal = amplitude[None, None, :] * np.exp(1j * phase)
+
+#     V_rfi = np.zeros_like(V)
+#     for i, k in enumerate(k_list):
+#         V_rfi[:, :, k] += rfi_signal[:, :, i]
+
+#     return V_rfi, k_list, f_list
+
+
 def narrowband_rfi(
     V,
     frequencies,
@@ -65,19 +153,23 @@ def narrowband_rfi(
     f_rfi=None,
     k_rfi=None,
     phase_mode="random",
+    duty_cycle=1.0,
     seed=None
 ):
     """
     Inject narrowband RFI:
     V_RFI = A_RFI * exp(i phi) * delta(f - f_RFI)
 
-    Either f_rfi (Hz) or k_rfi (channel index) must be provided.
+    duty_cycle: fraction of time integrations affected by RFI
     """
 
     rng = np.random.default_rng(seed)
     frequencies = np.asarray(frequencies)
 
     N_baselines, N_times, N_freqs = V.shape
+
+    if not (0.0 <= duty_cycle <= 1.0):
+        raise ValueError("duty_cycle must be between 0 and 1")
 
     # --- sanity checks ---
     if f_rfi is not None and k_rfi is not None:
@@ -101,11 +193,22 @@ def narrowband_rfi(
     n_rfi = len(k_list)
 
     # --- amplitude handling ---
-    amplitude = np.atleast_1d(amplitude)
-    if amplitude.size == 1:
-        amplitude = np.repeat(amplitude, n_rfi)
-    elif amplitude.size != n_rfi:
-        raise ValueError("amplitude must be scalar or same length as RFI channels")
+    amplitude = np.asarray(amplitude)
+
+    if amplitude.ndim == 1 and amplitude.size == 2:
+        amin, amax = amplitude
+        if amin < 0 or amax <= amin:
+            raise ValueError("amplitude range must be (amin, amax)")
+        amplitude = rng.uniform(amin, amax, size=n_rfi)
+
+    elif amplitude.size == 1:
+        amplitude = np.repeat(amplitude.item(), n_rfi)
+
+    elif amplitude.size == n_rfi:
+        pass
+
+    else:
+        raise ValueError("Invalid amplitude specification")
 
     # --- phase ---
     if phase_mode == "random":
@@ -120,12 +223,111 @@ def narrowband_rfi(
 
     rfi_signal = amplitude[None, None, :] * np.exp(1j * phase)
 
+    # --- duty cycle temporal ---
+    if duty_cycle < 1.0:
+        time_mask = rng.random(N_times) < duty_cycle
+        rfi_signal[:, ~time_mask, :] = 0.0
+
     V_rfi = np.zeros_like(V)
     for i, k in enumerate(k_list):
         V_rfi[:, :, k] += rfi_signal[:, :, i]
 
     return V_rfi, k_list, f_list
 
+
+
+# def broadband_rfi(
+#     V,
+#     frequencies,
+#     amplitude,
+#     f_range=None,
+#     k_range=None,
+#     phase_mode="random",
+#     seed=None
+# ):
+#     """
+#     Inyecta RFI de banda ancha:
+
+#     V_RFI = A_RFI * exp(i phi) * Pi(f_start, f_end)
+
+#     - amplitude puede ser:
+#         * escalar
+#         * array de largo N_canales
+#         * rango (Amin, Amax) -> amplitud aleatoria independiente por canal
+
+#     Se debe proporcionar exactamente uno: f_range (Hz) o k_range (índices).
+#     """
+
+#     rng = np.random.default_rng(seed)
+#     frequencies = np.asarray(frequencies)
+
+#     N_baselines, N_times, N_freqs = V.shape
+
+#     # --- Verificación de entradas ---
+#     if (f_range is not None) == (k_range is not None):
+#         raise ValueError("Debe proporcionar exactamente uno: f_range o k_range")
+
+#     # --- Selección de canales (definida SIEMPRE) ---
+#     if k_range is not None:
+#         k_start, k_end = k_range
+#         k_start = max(0, int(k_start))
+#         k_end = min(N_freqs - 1, int(k_end))
+#         k_indices = np.arange(k_start, k_end + 1, dtype=int)
+#     else:
+#         f_start, f_end = f_range
+#         k_indices = np.where(
+#             (frequencies >= f_start) & (frequencies <= f_end)
+#         )[0]
+
+#     # --- Salida temprana si no hay canales ---
+#     if k_indices.size == 0:
+#         return np.zeros_like(V), k_indices, frequencies[k_indices]
+
+#     n_chan = k_indices.size
+
+#     # --- Manejo de Amplitud ---
+#     amplitude = np.asarray(amplitude)
+
+#     # Rango aleatorio (Amin, Amax)
+#     if amplitude.ndim == 1 and amplitude.size == 2:
+#         amin, amax = amplitude
+#         if amin < 0 or amax <= amin:
+#             raise ValueError("amplitude range debe cumplir 0 <= Amin < Amax")
+#         amplitude = rng.uniform(amin, amax, size=n_chan)
+
+#     # Escalar
+#     elif amplitude.size == 1:
+#         amplitude = np.full(n_chan, amplitude.item())
+
+#     # Una amplitud por canal
+#     elif amplitude.size == n_chan:
+#         pass
+
+#     else:
+#         raise ValueError(
+#             "amplitude debe ser escalar, (Amin, Amax) o array de largo N_canales"
+#         )
+
+#     amplitude = amplitude[None, None, :]  # (1, 1, n_chan)
+
+#     # --- Manejo de Fase ---
+#     if phase_mode == "random":
+#         phase = rng.uniform(
+#             0, 2 * np.pi,
+#             size=(N_baselines, N_times, n_chan)
+#         )
+#     elif phase_mode == "constant":
+#         phase = np.zeros((N_baselines, N_times, n_chan))
+#     else:
+#         raise ValueError("phase_mode debe ser 'random' o 'constant'")
+
+#     # --- Señal RFI ---
+#     rfi_signal = amplitude * np.exp(1j * phase)
+
+#     V_rfi = np.zeros_like(V)
+#     V_rfi[:, :, k_indices] = rfi_signal
+
+#     return V_rfi, k_indices, frequencies[k_indices]
 
 def broadband_rfi(
     V,
@@ -134,53 +336,96 @@ def broadband_rfi(
     f_range=None,
     k_range=None,
     phase_mode="random",
+    duty_cycle=1.0,
     seed=None
 ):
     """
     Inyecta RFI de banda ancha:
+
     V_RFI = A_RFI * exp(i phi) * Pi(f_start, f_end)
-    
-    Se debe proporcionar f_range (Hz) o k_range (índices de canal) como tupla/lista (inicio, fin).
+
+    - amplitude puede ser:
+        * escalar
+        * array de largo N_canales
+        * rango (Amin, Amax) -> amplitud aleatoria independiente por canal
+
+    duty_cycle ∈ [0, 1]: fracción de tiempos afectados por RFI
+
+    Se debe proporcionar exactamente uno: f_range (Hz) o k_range (índices).
     """
+
     rng = np.random.default_rng(seed)
     frequencies = np.asarray(frequencies)
+
     N_baselines, N_times, N_freqs = V.shape
 
+    # --- sanity check duty cycle ---
+    if not (0.0 <= duty_cycle <= 1.0):
+        raise ValueError("duty_cycle debe estar entre 0 y 1")
+
     # --- Verificación de entradas ---
-    if (f_range is not None and k_range is not None) or (f_range is None and k_range is None):
+    if (f_range is not None) == (k_range is not None):
         raise ValueError("Debe proporcionar exactamente uno: f_range o k_range")
 
-    # --- Determinar máscara de canales (Función Ventana Rectangular) ---
+    # --- Selección de canales ---
     if k_range is not None:
         k_start, k_end = k_range
-        # Asegurar que los índices estén dentro de los límites del array
-        k_indices = np.arange(max(0, k_start), min(N_freqs, k_end + 1))
+        k_start = max(0, int(k_start))
+        k_end = min(N_freqs - 1, int(k_end))
+        k_indices = np.arange(k_start, k_end + 1, dtype=int)
     else:
         f_start, f_end = f_range
-        # Encontrar canales que caen dentro del rango de frecuencia 
-        k_indices = np.where((frequencies >= f_start) & (frequencies <= f_end))[0]
+        k_indices = np.where(
+            (frequencies >= f_start) & (frequencies <= f_end)
+        )[0]
 
-    if len(k_indices) == 0:
+    if k_indices.size == 0:
         return np.zeros_like(V), k_indices, frequencies[k_indices]
 
+    n_chan = k_indices.size
+
+    # --- Manejo de Amplitud ---
+    amplitude = np.asarray(amplitude)
+
+    if amplitude.ndim == 1 and amplitude.size == 2:
+        amin, amax = amplitude
+        if amin < 0 or amax <= amin:
+            raise ValueError("amplitude range debe cumplir 0 <= Amin < Amax")
+        amplitude = rng.uniform(amin, amax, size=n_chan)
+
+    elif amplitude.size == 1:
+        amplitude = np.full(n_chan, amplitude.item())
+
+    elif amplitude.size == n_chan:
+        pass
+
+    else:
+        raise ValueError(
+            "amplitude debe ser escalar, (Amin, Amax) o array de largo N_canales"
+        )
+
+    amplitude = amplitude[None, None, :]  # (1, 1, n_chan)
+
     # --- Manejo de Fase ---
-    # La fase puede ser aleatoria o constante según el modo [cite: 263, 271]
     if phase_mode == "random":
         phase = rng.uniform(
-            0, 2 * np.pi, 
-            size=(N_baselines, N_times, len(k_indices))
+            0, 2 * np.pi,
+            size=(N_baselines, N_times, n_chan)
         )
     elif phase_mode == "constant":
-        phase = np.zeros((N_baselines, N_times, len(k_indices)))
+        phase = np.zeros((N_baselines, N_times, n_chan))
     else:
         raise ValueError("phase_mode debe ser 'random' o 'constant'")
 
-    # --- Generación de la señal de RFI ---
-    # V_RFI = A_RFI * exp(i * phase) [cite: 267]
+    # --- Señal RFI ---
     rfi_signal = amplitude * np.exp(1j * phase)
 
+    # --- duty cycle temporal ---
+    if duty_cycle < 1.0:
+        time_mask = rng.random(N_times) < duty_cycle  # (N_times,)
+        rfi_signal[:, ~time_mask, :] = 0.0
+
     V_rfi = np.zeros_like(V)
-    # Aplicar la señal a los canales seleccionados (simulando la función Pi)
     V_rfi[:, :, k_indices] = rfi_signal
 
     return V_rfi, k_indices, frequencies[k_indices]
@@ -197,11 +442,15 @@ def transient_rfi(
     seed=None
 ):
     """
-    Inyecta RFI Transitorio:
+    Inyecta múltiples RFI transitorios.
+
     V_RFI(t) = A_RFI * exp(i phi) * delta(t - t_RFI)
-    
-    Se puede proporcionar t_rfi (valor en el array de tiempos) o n_step (índice del tiempo).
+
+    Parámetros:
+    - t_rfi  : float o iterable de floats (tiempos)
+    - n_step : int o iterable de ints (índices)
     """
+
     rng = np.random.default_rng(seed)
     times = np.asarray(times)
     N_baselines, N_times, N_freqs = V.shape
@@ -210,38 +459,53 @@ def transient_rfi(
     if (t_rfi is not None and n_step is not None) or (t_rfi is None and n_step is None):
         raise ValueError("Debe proporcionar exactamente uno: t_rfi o n_step")
 
-    # --- Determinar el índice de tiempo (Función Delta) ---
-    if n_step is not None:
-        # Rango de pasos de tiempo afectados
-        t_indices = np.arange(n_step, min(N_times, n_step + duration_steps))
+    # --- Normalizar a listas ---
+    if t_rfi is not None:
+        t_rfi_list = np.atleast_1d(t_rfi)
+        idx_list = [
+            np.argmin(np.abs(times - t)) for t in t_rfi_list
+        ]
     else:
-        # Encontrar el tiempo más cercano al solicitado
-        idx_start = np.argmin(np.abs(times - t_rfi))
-        t_indices = np.arange(idx_start, min(N_times, idx_start + duration_steps))
-
-    if len(t_indices) == 0:
-        return np.zeros_like(V), t_indices
-
-    # --- Manejo de Fase ---
-    # El transitorio suele afectar a todas las frecuencias simultáneamente
-    if phase_mode == "random":
-        phase = rng.uniform(
-            0, 2 * np.pi, 
-            size=(N_baselines, len(t_indices), N_freqs)
-        )
-    elif phase_mode == "constant":
-        phase = np.zeros((N_baselines, len(t_indices), N_freqs))
-    else:
-        raise ValueError("phase_mode debe ser 'random' or 'constant'")
-
-    # --- Generación de la señal ---
-    rfi_signal = amplitude * np.exp(1j * phase)
+        idx_list = np.atleast_1d(n_step)
 
     V_rfi = np.zeros_like(V)
-    # Aplicar la señal solo en los instantes de tiempo seleccionados
-    V_rfi[:, t_indices, :] = rfi_signal
+    all_t_indices = []
 
-    return V_rfi, t_indices
+    # --- Aplicar cada transiente ---
+    for idx_start in idx_list:
+        if idx_start < 0 or idx_start >= N_times:
+            continue
+
+        t_indices = np.arange(
+            idx_start,
+            min(N_times, idx_start + duration_steps)
+        )
+
+        if len(t_indices) == 0:
+            continue
+
+        all_t_indices.append(t_indices)
+
+        # --- Fase ---
+        if phase_mode == "random":
+            phase = rng.uniform(
+                0, 2 * np.pi,
+                size=(N_baselines, len(t_indices), N_freqs)
+            )
+        elif phase_mode == "constant":
+            phase = np.zeros((N_baselines, len(t_indices), N_freqs))
+        else:
+            raise ValueError("phase_mode debe ser 'random' o 'constant'")
+
+        rfi_signal = amplitude * np.exp(1j * phase)
+
+        V_rfi[:, t_indices, :] += rfi_signal
+
+    if len(all_t_indices) == 0:
+        return V_rfi, np.array([], dtype=int)
+
+    return V_rfi, np.unique(np.concatenate(all_t_indices))
+
 
 def correlated_rfi(
     V,
