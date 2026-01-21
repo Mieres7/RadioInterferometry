@@ -444,10 +444,12 @@ def plot_time_frequency(
     frequencies,
     eps=1e-6,
     figsize=(10, 6),
-    title_suffix=""
+    title_suffix="",
+    show_phase=True
 ):
     """
-    Waterfall plot (time vs frequency) for amplitude and phase
+    Waterfall plot (time vs frequency) for amplitude
+    and optionally phase.
     """
 
     frequencies = np.asarray(frequencies)
@@ -462,9 +464,6 @@ def plot_time_frequency(
     vmin = np.percentile(amp_log, 5)
     vmax = np.percentile(amp_log, 99.5)
 
-    # --- Phase ---
-    phase = np.angle(V_tf)
-
     extent = [
         frequencies.min() / 1e6,
         frequencies.max() / 1e6,
@@ -472,38 +471,58 @@ def plot_time_frequency(
         amp_log.shape[0]
     ]
 
-    fig, axs = plt.subplots(2, 1, figsize=figsize, sharex=True)
+    if show_phase:
+        # --- Phase ---
+        phase = np.angle(V_tf)
 
-    im0 = axs[0].imshow(
-        amp_log,
-        aspect="auto",
-        origin="lower",
-        cmap="viridis",
-        vmin=vmin,
-        vmax=vmax,
-        extent=extent
-    )
-    axs[0].set_ylabel("Time Integrations")
-    axs[0].set_title(f"Amplitude (log scale) {title_suffix}")
-    plt.colorbar(im0, ax=axs[0], label="log₁₀(|V| / median)")
+        fig, axs = plt.subplots(2, 1, figsize=figsize, sharex=True)
 
-    im1 = axs[1].imshow(
-        phase,
-        aspect="auto",
-        origin="lower",
-        cmap="twilight",
-        vmin=-np.pi,
-        vmax=np.pi,
-        extent=extent
-    )
-    axs[1].set_xlabel("Frequency [MHz]")
-    axs[1].set_ylabel("Time Integrations")
-    axs[1].set_title(f"Phase {title_suffix}")
-    plt.colorbar(im1, ax=axs[1], label="Phase [rad]")
+        im0 = axs[0].imshow(
+            amp_log,
+            aspect="auto",
+            origin="lower",
+            cmap="viridis",
+            vmin=vmin,
+            vmax=vmax,
+            extent=extent
+        )
+        axs[0].set_ylabel("Time Integrations")
+        axs[0].set_title(f"Amplitude (log scale) {title_suffix}")
+        plt.colorbar(im0, ax=axs[0], label="log₁₀(|V| / median)")
+
+        im1 = axs[1].imshow(
+            phase,
+            aspect="auto",
+            origin="lower",
+            cmap="twilight",
+            vmin=-np.pi,
+            vmax=np.pi,
+            extent=extent
+        )
+        axs[1].set_xlabel("Frequency [MHz]")
+        axs[1].set_ylabel("Time Integrations")
+        axs[1].set_title(f"Phase {title_suffix}")
+        plt.colorbar(im1, ax=axs[1], label="Phase [rad]")
+
+    else:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+
+        im = ax.imshow(
+            amp_log,
+            aspect="auto",
+            origin="lower",
+            cmap="viridis",
+            vmin=vmin,
+            vmax=vmax,
+            extent=extent
+        )
+        ax.set_xlabel("Frequency [MHz]")
+        ax.set_ylabel("Time Integrations")
+        ax.set_title(f"Amplitude (log scale) {title_suffix}")
+        plt.colorbar(im, ax=ax, label="log₁₀(|V| / median)")
 
     plt.tight_layout()
     plt.show()
-
 
 def plot_rfi_spectrum(
     V,
@@ -516,52 +535,89 @@ def plot_rfi_spectrum(
     title=""
 ):
     """
-    Plot scalar-averaged cross-power spectrum for RFI inspection.
+    Grafica el espectro de potencia cruzada promediado para inspección de RFI.
 
-    Parameters
+    Parámetros
     ----------
     V : complex ndarray (N_baselines, N_times, N_freqs)
-        Visibilities.
+        Visibilidades.
     frequencies : ndarray (N_freqs,)
-        Frequencies in Hz.
-    f_range : tuple (f_start, f_end), optional
-        Frequency range to display [Hz].
+        Frecuencias en Hz.
+    f_range : tuple (f_start, f_end), opcional
+        Rango de frecuencia a mostrar [Hz].
     """
 
     frequencies = np.asarray(frequencies)
 
-    # --- spectral selection ---
+    # --- Selección de rango espectral ---
     if f_range is not None:
         f_start, f_end = f_range
         mask = (frequencies >= f_start) & (frequencies <= f_end)
         frequencies = frequencies[mask]
         V = V[:, :, mask]
 
-    # --- scalar average ---
+    # --- Promedio escalar ---
+    # Calculamos la magnitud y promediamos sobre líneas de base (0) y tiempo (1)
     amp = np.abs(V)
     amp_mean = amp.mean(axis=(0, 1))
 
+    # Normalización respecto a la mediana para resaltar picos de RFI
     if normalize:
-        amp_mean = amp_mean / np.median(amp_mean)
+        amp_mean = amp_mean / (np.median(amp_mean) + eps)
 
-    # --- log scaling ---
+    # --- Escala logarítmica ---
     if log_mode == "log10":
         y = np.log10(amp_mean + eps)
-        ylabel = r"log$_{10}$(|V|)"
+        ylabel = r"$\log_{10}(|V|)$"
     elif log_mode == "dB":
         y = 10 * np.log10(amp_mean + eps)
-        ylabel = r"10 log$_{10}$(|V|)"
+        ylabel = r"10 $\log_{10}(|V|)$ [dB]"
     else:
-        raise ValueError("log_mode must be 'log10' or 'dB'")
+        raise ValueError("log_mode debe ser 'log10' o 'dB'")
 
-    # --- plot ---
+    # --- Generación del gráfico ---
     plt.figure(figsize=figsize)
     plt.plot(frequencies / 1e6, y, lw=1.0, color="black")
 
-    plt.xlabel("Frequency [MHz]")
+    plt.xlabel("Frecuencia [MHz]")
     plt.ylabel(ylabel)
-    plt.title(title or "Scalar-averaged cross-power spectrum")
+    plt.title(title or "Espectro de potencia cruzada (Promedio Escalar)")
 
-    plt.grid(True, alpha=0.3)
+    plt.grid(True, alpha=0.3, linestyle='--')
     plt.tight_layout()
     plt.show()
+
+
+def plot_flag_map(flags, figsize=(8, 5), cmap='viridis', channel=None, baseline=None, mode=None):
+
+    flag_map = flags.astype(int)
+    
+    if mode == 'mean':
+        data = flag_map.mean(axis=0) 
+        title = 'Flagged visibilities (Mean)'
+    else:
+        if channel:
+            data = flag_map[:,:,channel]
+            title = f'Flagged visibilities (Chanel {channel})'
+        elif baseline:
+            data = flag_map[baseline,:,:]
+            title = f'Flagged visibilities (Chanel {baseline})'
+        
+    
+
+    plt.figure(figsize=figsize)
+    plt.imshow(
+        data,
+        aspect="auto",
+        origin="lower",
+        cmap=cmap,
+        vmin=0,
+        vmax=1
+    )
+    plt.xlabel("Channel index")
+    plt.ylabel("Time index")
+    plt.title(title)
+    plt.colorbar(label="Fraction flagged")
+    plt.show()
+
+
