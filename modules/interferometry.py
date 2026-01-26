@@ -66,11 +66,11 @@ def generate_random_sources(ra0_deg, dec0_deg, N=50, max_offset_deg=1.0, flux_ra
 def to_image(visibilities):
     """IFFT2 universal para NumPy y CuPy"""
 
-    fft2  = xp.fft.ifft2
+    ifft2  = xp.fft.ifft2
     fftsh = xp.fft.fftshift
     ifsh  = xp.fft.ifftshift
 
-    return fftsh(fft2(ifsh(visibilities))).real
+    return fftsh(ifft2(ifsh(visibilities)))
 
 def to_fourier(image):
     """FFT2 universal para NumPy y CuPy"""
@@ -153,7 +153,11 @@ def restore_image(I_model, V_obs, weights, uvw_lambda, pixel_size, forward_op, a
     
     return I_restored, dirty_residuals, beam
 
-def get_dirty_image(gridded_visibilities, gridded_weights):
+def get_dirty_image(gridded_visibilities):
     # Inverse Transform: ifftshift → ifft2 → fftshift
-    image_complex = to_image(gridded_visibilities * gridded_weights)
+    image_complex = to_image(gridded_visibilities)
     return image_complex.real
+
+def get_psf(weighted_visibilities):
+    psf_complex = to_image(weighted_visibilities)
+    return psf_complex.real

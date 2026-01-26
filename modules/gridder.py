@@ -3,7 +3,7 @@ import numpy as np
 import cupy as cp
 import math
 
-from modules.coords import max_basline
+from modules.coords import max_baseline
 from modules.noise import add_gaussian_noise
 from modules.backend import get_backend, xp
 
@@ -180,13 +180,21 @@ def grid_visibilities_cuda(V, uvw, du, dv, Npix=512):
 
 def get_grid_config(V, uvw_lambda, N, baselines, oversampling_factor, frequencies, add_noise=False):
     # Max distance between baselines
-    Dmax = max_basline(baselines)
+    Dmax = max_baseline(baselines)
 
-    c = 299792458.0 
+    c = 299_792_458.0
     freq = np.min(frequencies)
     min_wavelenghgt = c / freq
-    dx = dy = (min_wavelenghgt / Dmax) / oversampling_factor
+    
+    # Alcance máximo del plano uv (en longitudes de onda)
+    u_max = Dmax / min_wavelenghgt
+    v_max = np.abs(u_max)
 
+    # Resolución angular del plano imagen (rad)
+    dx = 1.0 / (2.0 * u_max * oversampling_factor)
+    dy = dx
+
+    # Espaciado de la grilla uv (Eq. 6 del PDF)
     du = 1.0 / (N * dx)
     dv = du
 

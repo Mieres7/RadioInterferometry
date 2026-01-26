@@ -23,19 +23,26 @@ def ecef_to_enu(ecef, array_center, phi=-33.45, lamb=-70.66, rad=True, is_array=
 
 
 def enu_to_altaz(enu, rad=True, is_array=True):
-    if is_array:
-        E, N, U = enu[0], enu[1], enu[2]
-    else:
-        E, N, U = float(enu[0]), float(enu[1]), float(enu[2])
+  '''
+  Transform the enu vector to altitude and azimut
+  '''
 
-    r = np.hypot(E, N)
-    El = np.arctan2(U, r)
-    A = np.arctan2(E, N)
+  if is_array:
+    E, N, U = enu[0], enu[1], enu[2]
+  else:
+    E, N, U = float(enu[0]), float(enu[1]), float(enu[2])
+
+  r = np.hypot(E, N, U)           
+  azimuth = np.arctan2(E, N)
+  elevation = np.arcsin(U / r)
   
-    if rad:
-        return El, A % (2*np.pi)
-    else:
-        return np.degrees(El), np.degrees(A) % 360.0
+  if rad:
+      return elevation, azimuth % (2*np.pi)
+  else:
+      azimuth_deg = np.degrees(azimuth) % 360.0
+      elevation_deg = np.degrees(elevation)
+      return elevation_deg, azimuth_deg
+
 
 
 def hor_to_eq(enu, alt, az, phi=-33.45):
@@ -81,6 +88,6 @@ def baselines(enu, include_conjugate=True):
     return baselines_result
 
 
-def max_basline(baselines):
+def max_baseline(baselines):
     distances = pdist(baselines)
     return np.max(distances)

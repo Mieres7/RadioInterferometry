@@ -414,7 +414,7 @@ def plot(
     plt.tight_layout()
     plt.show()
 
-def plot_uv_coverage_2(uvw, bins=512):
+def plot_uv_coverage_2(uvw, bins=512, title=""):
     # Extraemos u y v (asegúrate de que estén en las unidades deseadas, ej. baselines)
     u = uvw[..., 0].flatten()
     v = uvw[..., 1].flatten()
@@ -434,7 +434,7 @@ def plot_uv_coverage_2(uvw, bins=512):
     plt.colorbar(label='$n_B$')
     plt.xlabel('u')
     plt.ylabel('v')
-    plt.title('Baseline Distribution (SKA-Low Replica)')
+    plt.title(title)
     plt.axis('equal')
     plt.show()
 
