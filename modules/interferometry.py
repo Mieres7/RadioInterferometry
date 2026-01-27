@@ -47,7 +47,7 @@ def visibilities_from_sources(uvw_lambda, sources, ra0_deg, dec0_deg, sigma_pb=0
 
     V_total = np.zeros(u.shape, dtype=np.complex64)
     for ls, ms, ns, As, Ss in zip(l_src, m_src, n_src, A_src, S0s):
-        phase = 2j * np.pi * (u * ls + v * ms + w * (ns - 1.0))
+        phase = -2j * np.pi * (u * ls + v * ms + w * (ns - 1.0))
         V_total += As * Ss / ns * np.exp(phase)
 
     omega = np.ones_like(V_total, dtype=float)
