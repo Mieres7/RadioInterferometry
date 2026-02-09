@@ -439,6 +439,91 @@ def plot_uv_coverage_2(uvw, bins=512, title=""):
     plt.show()
 
 
+# def plot_time_frequency(
+#     V,
+#     frequencies,
+#     eps=1e-6,
+#     figsize=(10, 6),
+#     title_suffix="",
+#     show_phase=True
+# ):
+#     """
+#     Waterfall plot (time vs frequency) for amplitude
+#     and optionally phase.
+#     """
+
+#     frequencies = np.asarray(frequencies)
+
+#     # Average over baselines
+#     V_tf = np.nanmean(V, axis=0)  # (time, freq)
+
+#     # --- Amplitude ---
+#     amp = np.abs(V_tf)
+#     amp_log = np.log10(amp / np.median(amp) + eps)
+
+#     vmin = np.percentile(amp_log, 5)
+#     vmax = np.percentile(amp_log, 99.5)
+
+#     extent = [
+#         frequencies.min() / 1e6,
+#         frequencies.max() / 1e6,
+#         0,
+#         amp_log.shape[0]
+#     ]
+
+#     if show_phase:
+#         # --- Phase ---
+#         phase = np.angle(V_tf)
+
+#         fig, axs = plt.subplots(2, 1, figsize=figsize, sharex=True)
+
+#         im0 = axs[0].imshow(
+#             amp_log,
+#             aspect="auto",
+#             origin="lower",
+#             cmap="viridis",
+#             vmin=vmin,
+#             vmax=vmax,
+#             extent=extent
+#         )
+#         axs[0].set_ylabel("Time Integrations")
+#         axs[0].set_title(f"Amplitude (log scale) {title_suffix}")
+#         plt.colorbar(im0, ax=axs[0], label="log₁₀(|V| / median)")
+
+#         im1 = axs[1].imshow(
+#             phase,
+#             aspect="auto",
+#             origin="lower",
+#             cmap="twilight",
+#             vmin=-np.pi,
+#             vmax=np.pi,
+#             extent=extent
+#         )
+#         axs[1].set_xlabel("Frequency [MHz]")
+#         axs[1].set_ylabel("Time Integrations")
+#         axs[1].set_title(f"Phase {title_suffix}")
+#         plt.colorbar(im1, ax=axs[1], label="Phase [rad]")
+
+#     else:
+#         fig, ax = plt.subplots(1, 1, figsize=figsize)
+
+#         im = ax.imshow(
+#             amp_log,
+#             aspect="auto",
+#             origin="lower",
+#             cmap="viridis",
+#             vmin=vmin,
+#             vmax=vmax,
+#             extent=extent
+#         )
+#         ax.set_xlabel("Frequency [MHz]")
+#         ax.set_ylabel("Time Integrations")
+#         ax.set_title(f"Amplitude (log scale) {title_suffix}")
+#         plt.colorbar(im, ax=ax, label="log₁₀(|V| / median)")
+
+#     plt.tight_layout()
+#     plt.show()
+
 def plot_time_frequency(
     V,
     frequencies,
@@ -447,22 +532,18 @@ def plot_time_frequency(
     title_suffix="",
     show_phase=True
 ):
-    """
-    Waterfall plot (time vs frequency) for amplitude
-    and optionally phase.
-    """
-
     frequencies = np.asarray(frequencies)
 
-    # Average over baselines
-    V_tf = np.mean(V, axis=0)  # (time, freq)
+    # Average over baselines (NaN-safe)
+    V_tf = np.nanmean(V, axis=0)  # (time, freq)
 
     # --- Amplitude ---
     amp = np.abs(V_tf)
-    amp_log = np.log10(amp / np.median(amp) + eps)
+    med = np.nanmedian(amp)
+    amp_log = np.log10(amp / med + eps)
 
-    vmin = np.percentile(amp_log, 5)
-    vmax = np.percentile(amp_log, 99.5)
+    vmin = np.nanpercentile(amp_log, 5)
+    vmax = np.nanpercentile(amp_log, 99.5)
 
     extent = [
         frequencies.min() / 1e6,
@@ -472,7 +553,6 @@ def plot_time_frequency(
     ]
 
     if show_phase:
-        # --- Phase ---
         phase = np.angle(V_tf)
 
         fig, axs = plt.subplots(2, 1, figsize=figsize, sharex=True)
@@ -523,6 +603,7 @@ def plot_time_frequency(
 
     plt.tight_layout()
     plt.show()
+
 
 def plot_rfi_spectrum(
     V,

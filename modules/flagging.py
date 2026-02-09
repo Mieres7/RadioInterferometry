@@ -218,3 +218,40 @@ def calculate_rfi_metrics(predicted_mask, true_mask):
         "FP": fp,
         "FN": fn
     }
+
+
+
+# ------------ metrics ---------------
+
+def frequency_occupancy(mask):
+    """
+    Indica que % de datos están marcados como RFI.
+    """
+    return np.mean(mask, axis=(0,1))
+
+
+def mad(vis):
+    '''
+    Calcula la MAD (Median Absolute Deviation) por canal de frecuencia.
+    '''
+    amp = np.abs(vis)
+
+    med = np.median(amp, axis=(0, 1), keepdims=True)  # (1,1,F)
+    mad = np.median(np.abs(amp - med), axis=(0, 1))   # (F,)
+
+    return mad
+
+def spectral_kurtosis(vis):
+    """
+    Calcula la SK para un array de visibilidades.
+    """
+    N = vis.shape[0] 
+    
+    power = np.abs(vis)**2
+    
+    s1 = np.sum(power, axis=0)
+    s2 = np.sum(power**2, axis=0)
+    
+    sk = ((N + 1) / (N - 1)) * ((N * s2 / (s1**2)) - 1)
+    
+    return sk

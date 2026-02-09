@@ -2,7 +2,7 @@ from numba import cuda
 import cupy as cp
 
 # Selección manual opcional
-USE_CUPY = True      # fuerza CuPy
+USE_CUPY = False      # fuerza CuPy
 USE_NUMBA = True    # o fuerza Numba
 # Si ambos son False → modo auto
 
