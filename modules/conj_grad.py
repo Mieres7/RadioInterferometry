@@ -18,7 +18,7 @@ def compute_residual(A_H, v_obs, v_model):
 
 import numpy as np
 
-def nonlinear_conjugate_gradient(A, v_obs, N, iterations=20, tol=1e-6):
+def nonlinear_conjugate_gradient(A, v_obs, N, iterations=20, tol=1e-6, reg_lambda=0.1):
     """
     Implementación 100% fiel al Algorithm 1 de la guía. 
     """
@@ -30,8 +30,6 @@ def nonlinear_conjugate_gradient(A, v_obs, N, iterations=20, tol=1e-6):
     # Como I0 es cero, r0 = A^H * V_obs
     r_k = A_H @ (v_obs - (A @ I_k)) 
     p_k = r_k.copy() # p_0 = r_0 [cite: 514]
-    
-    print(f"Iniciando Algoritmo 1 (Identico a la guia)...")
 
     # --- Iteración principal --- [cite: 516]
     for k in range(iterations):
@@ -43,27 +41,23 @@ def nonlinear_conjugate_gradient(A, v_obs, N, iterations=20, tol=1e-6):
 
         # 2. Calcular alpha_k [cite: 516]
         # alpha_k = (r_k^H * r_k) / (p_k^H * A^H * A * p_k)
-        Ap = A @ p_k
-        alpha_k = np.vdot(r_k, r_k) / np.vdot(Ap, Ap) # El denominador es equivalente a p^H A^H A p
+        Ap = A @ p_k  
+        
+        # 2. Calcular alpha_k incluyendo lambda [cite: 516, 536]
+        alpha_k = np.vdot(r_k, r_k) / (np.vdot(Ap, Ap) + reg_lambda * np.vdot(p_k, p_k))
 
-        # 3. Actualizar Imagen: I_{k+1} = I_k + alpha_k * p_k [cite: 516]
+        # 3. Actualizar Imagen
         I_k = I_k + alpha_k * p_k
+        I_k = np.real(I_k).astype(complex) # Forzar física real
 
-        # 4. Actualizar Residual: r_{k+1} = r_k - alpha_k * A^H * A * p_k 
-        # Esta es la parte que NO usa la imagen I directamente en la fórmula
-        r_k_next = r_k - alpha_k * (A_H @ Ap)
+        # 4. Actualizar Residual con el término de regularización 
+        r_k_next = r_k - alpha_k * (A_H @ Ap + reg_lambda * p_k)
 
-        # 5. Calcular beta_k [cite: 519]
-        # beta_k = (r_{k+1}^H * r_{k+1}) / (r_k^H * r_k)
+        # 5. Calcular beta_k
         beta_k = np.vdot(r_k_next, r_k_next) / np.vdot(r_k, r_k)
 
-        # 6. Actualizar dirección: p_{k+1} = r_{k+1} + beta_k * p_k [cite: 520]
+        # 6. Actualizar dirección
         p_k = r_k_next + beta_k * p_k
         r_k = r_k_next
         
-        # (Opcional) Monitoreo de la función objetivo [cite: 501]
-        if k % 5 == 0:
-            print(f"Iteración {k}: Norm Residual = {res_norm:.4e}")
-
-    # --- Resultado --- [cite: 521, 522]
-    return I_k.reshape((N, N))
+    return np.real(I_k).reshape((N, N))
