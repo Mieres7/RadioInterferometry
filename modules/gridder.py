@@ -177,21 +177,20 @@ def grid_visibilities_cuda(V, uvw, du, dv, Npix=512):
     return VG, WG
 
 
-
 def get_grid_config(V, uvw_lambda, N, baselines, oversampling_factor, frequencies, add_noise=False):
     # Max distance between baselines
     Dmax = max_baseline(baselines)
 
     c = 299_792_458.0
-    freq = np.min(frequencies)
+    freq = np.max(frequencies)
     min_wavelenghgt = c / freq
     
     # Alcance máximo del plano uv (en longitudes de onda)
-    u_max = Dmax / min_wavelenghgt
-    v_max = np.abs(u_max)
+    # u_max = Dmax / min_wavelenghgt
+    # v_max = np.abs(u_max)
 
     # Resolución angular del plano imagen (rad)
-    dx = 1.0 / (2.0 * u_max * oversampling_factor)
+    dx = (min_wavelenghgt / Dmax) * oversampling_factor
     dy = dx
 
     # Espaciado de la grilla uv (Eq. 6 del PDF)

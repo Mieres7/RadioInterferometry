@@ -3,7 +3,7 @@ import numpy as np
 import time
 from modules.interferometry import adjoint_op, forward_op
 from modules.backend import get_backend, xp
-
+import matplotlib.pyplot as plt
 
 #Array = np.ndarray
 
@@ -293,6 +293,176 @@ def lbfgs_optimize(
     }
 
     return x, info
+
+
+# --------- Non-Linear Conjugate Gradient ---------
+
+def ncg_optimize(
+    x0,
+    args,
+    max_iter=100,
+    gtol=1e-6,
+    ftol=1e-12,
+    verbose=True,
+    # Armijo params
+    armijo_alpha0=1.0,
+    armijo_rho=0.5,
+    armijo_c1=1e-4,
+    armijo_alpha_min=1e-12,
+    armijo_max_iter=50,
+    restart=True
+):
+    """
+    Nonlinear Conjugate Gradient (Fletcher–Reeves variant)
+    """
+    x = _as_xp(x0)
+
+    cost, grad = obj_function(x, *args)
+    cost = float(cost)
+    grad = _as_xp(grad)
+
+    # Stats
+    cost_history = [cost]
+    gradnorm_history = [_norm(grad)]
+    alpha_history = []
+    beta_history = []
+    rel_change_history = []
+
+    direction = -grad.copy()
+
+    cost_history = [cost]
+    t_start = time.time()
+
+    if verbose:
+        print(f"[NCG] it=0 cost={cost:.6e} ||g||={_norm(grad):.3e}")
+
+    for k in range(1, max_iter + 1):
+
+        gnorm = _norm(grad)
+        if gnorm <= gtol:
+            if verbose:
+                print(f"[NCG] Converged (grad) at iter {k}")
+            break
+
+        # Ensure descent direction
+        if _dot(grad, direction) >= 0:
+            direction = -grad.copy()
+
+        # -----------------------
+        # Line search
+        # -----------------------
+        alpha, cost_new, status = armijo_line_search(
+            image=x,
+            direction=direction,
+            grad=grad,
+            current_cost=cost,
+            args=args,
+            alpha0=armijo_alpha0,
+            rho=armijo_rho,
+            c1=armijo_c1,
+            alpha_min=armijo_alpha_min,
+            max_iter=armijo_max_iter
+        )
+
+        # fallback
+        if status in ["non_descent", "min_alpha"]:
+            direction = -grad
+            alpha = 1e-3
+            x_next = x + alpha * direction
+            cost_new, grad_new = obj_function(x_next, *args)
+        else:
+            x_next = x + alpha * direction
+            cost_new, grad_new = obj_function(x_next, *args)
+
+        cost_new = float(cost_new)
+        grad_new = _as_xp(grad_new)
+
+        # -----------------------
+        # Fletcher–Reeves beta
+        # -----------------------
+        numerator = _dot(grad_new, grad_new)
+        denominator = _dot(grad, grad) + 1e-16
+        beta = numerator / denominator
+
+        # Optional restart
+        if restart and (k % x.size == 0):
+            beta = 0.0
+
+        beta_history.append(float(beta))
+        alpha_history.append(float(alpha))
+        gradnorm_history.append(_norm(grad_new))
+
+        # New direction
+        direction = -grad_new + beta * direction
+
+        # Update
+        x = x_next
+        cost_prev = cost
+        cost = cost_new
+        grad = grad_new
+        cost_history.append(cost)
+
+        if verbose:
+            print(
+                f"[NCG] it={k} cost={cost:.6e} "
+                f"||g||={_norm(grad):.3e} alpha={alpha:.2e} beta={beta:.2e}"
+            )
+
+        # stopping by Δf
+        denom = abs(cost) + abs(cost_prev) + 1e-16
+        rel_change = 2 * abs(cost - cost_prev) / denom
+
+        rel_change_history.append(rel_change)
+
+        if rel_change <= ftol:
+            if verbose:
+                print(f"[NCG] Converged (Δf small) at iter {k}")
+            break
+
+    total_time = time.time() - t_start
+
+    info = {
+        "cost_history": cost_history,
+        "gradnorm_history": gradnorm_history,
+        "alpha_history": alpha_history,
+        "beta_history": beta_history,
+        "rel_change_history": rel_change_history,
+        "niter": len(cost_history) - 1,
+        "time": total_time
+    }   
+
+    return x, info
+
+
+def plot_stats(info, title):
+
+    fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+
+    # --- Cost ---
+    axs[0].semilogy(info["cost_history"])
+    axs[0].set_title("Objective Function")
+    axs[0].set_ylabel("Cost")
+
+    # --- Gradient Norm ---
+    axs[1].semilogy(info["gradnorm_history"])
+    axs[1].set_title("Gradient Norm")
+    axs[1].set_ylabel("||∇f||")
+
+    # --- Step Size ---
+    axs[2].plot(info["alpha_history"])
+    axs[2].set_title("Step Size")
+    axs[2].set_ylabel("Alpha")
+
+    # Shared X label
+    fig.supxlabel("Iteration")
+    
+    fig.suptitle(title, fontsize=14)
+
+    for ax in axs:
+        ax.grid(True)
+
+    plt.tight_layout()
+    plt.show()
 
 
 
